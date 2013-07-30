@@ -460,7 +460,7 @@ class Parser {
 									ensure(TPClose);
 									ntk = token();
 									break;
-								default: break;
+								default: trace(ntk); break;
 							}
 							allowed.push(parseExpr());
 						}

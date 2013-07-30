@@ -5,6 +5,5 @@
 -neko hscript.n
 -main Test 
 -dce no
--D hscriptPos
 -debug
 -cmd neko hscript.n
