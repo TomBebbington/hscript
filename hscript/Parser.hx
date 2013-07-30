@@ -130,12 +130,8 @@ class Parser {
 			unops.set(x, x == "++" || x == "--");
 	}
 
-	public inline function error( err, pmin, pmax ) {
-		#if hscriptPos
-		throw new Error(err, pmin, pmax);
-		#else
-		throw err;
-		#end
+	public inline function error( err:Error, pmin:Int, pmax:Int) {
+		throw new AtPos<Error>(err, pmin, pmax);
 	}
 
 	public function invalidChar(c) {
@@ -202,31 +198,14 @@ class Parser {
 		#else
 		return e;
 		#end
-	}
-
-	inline function pmin(e:Expr) {
+	}	
+	inline function mk(e,?pmin,?pmax) {
 		#if hscriptPos
-		return e.pmin;
+			if( pmin == null ) pmin = tokenMin;
+			if( pmax == null ) pmax = tokenMax;
+			return new AtPos<Expr>(e, pmin, pmax);
 		#else
-		return 0;
-		#end
-	}
-
-	inline function pmax(e:Expr) {
-		#if hscriptPos
-		return e.pmax;
-		#else
-		return 0;
-		#end
-	}
-
-	inline function mk(e,?pmin,?pmax) : Expr {
-		#if hscriptPos
-		if( pmin == null ) pmin = tokenMin;
-		if( pmax == null ) pmax = tokenMax;
-		return { e : e, pmin : pmin, pmax : pmax };
-		#else
-		return e;
+			return e;
 		#end
 	}
 

@@ -359,94 +359,13 @@ StringTools.isEof = function(c){
 var Test = function() { }
 $hxClasses["Test"] = Test;
 Test.__name__ = ["Test"];
-Test.test = function(x,v,vars){
+Test.main = function(){
 	var p = new hscript.Parser();
-	var program = p.parseString(x);
+	var program = p.parseString("function mustEq(a, b) {\n\tif(a != b)\n\t\tthrow '$a should be $b';\n};\nmustEq(0, 0);\nmustEq(0, 0);\nmustEq(0xFF, 255);\nmustEq(switch(5 * 5) {case 25: 1; default: 50;}, 1);\nmustEq(switch(5 * 5) {case 25 if(false): 1; default: 50;}, 50);\nmustEq(0xBFFFFFFF, 0xBFFFFFFF);\nmustEq(0x7FFFFFFF, 0x7FFFFFFF);\nmustEq(-123, -123);\nmustEq(- 123, -123);\nmustEq(1.546, 1.546);\nmustEq(.545, .545);\nmustEq('bla', \"bla\");\nmustEq(null, null);\nmustEq(true, true);\nmustEq(false, false);\nmustEq(1 == 2, false);\nmustEq(1.3 == 1.3, true);\nmustEq(5 > 3, true);\nmustEq(0 < 0, false);\nmustEq(-1 <= -1, true);\nmustEq(1 + 2, 3);\nmustEq(~545, -546);\nmustEq('abc' + 55, \"abc55\");\nmustEq('abc' + 'de', \"abcde\");\nmustEq(-1 + 2, 1);\nmustEq(1 / 5, 0.2);\nmustEq(3 * 2 + 5, 11);\nmustEq(3 * (2 + 5), 21);\nmustEq(3 * 2 // + 5 \\n + 6, 12);\nmustEq(3 /* 2\\n */ + 5, 8);\nmustEq([55,66,77][1], 66);\nmustEq(var a = [55]; a[0] *= 2; a[0], 110);\nmustEq(x, 55,{ x : 55 });\nmustEq(var y = 33; y, 33);\nmustEq({ 1; 2; 3; }, 3);\nmustEq({ var x = 0; } x, 55,{ x : 55 });\nmustEq(o.val, 55,{ o : { val : 55 } });\nmustEq(o.val, null,{ o : {} });\nmustEq(var a = 1; a++, 1);\nmustEq(var a = 1; a++; a, 2);\nmustEq(var a = 1; ++a, 2);\nmustEq(var a = 1; a *= 3, 3);\nmustEq(a = b = 3; a + b, 6);\nmustEq(add(1,2), 3,{ add : function(x,y) return x + y });\nmustEq(a.push(5); a.pop() + a.pop(), 8,{ a : [3] });\nmustEq(if( true ) 1 else 2, 1);\nmustEq(if( false ) 1 else 2, 2);\nmustEq(var t = 0; for( x in [1,2,3] ) t += x; t, 6);\nmustEq(var a = new Array(); for( x in 0...5 ) a[x] = x; a.join('-'), \"0-1-2-3-4\");\nmustEq((function(a,b) return a + b)(4,5), 9);\nmustEq(var y = 0; var add = function(a) y += a; add(5); add(3); y, 8);\nmustEq(var a = [1,[2,[3,[4,null]]]]; var t = 0; while( a != null ) { t += a[0]; a = a[1]; }; t, 10);\nmustEq(var t = 0; for( x in 1...10 ) t += x; t, 45);\nmustEq(var t = 0; for( x in new IntIterator(1,10) ) t +=x; t, 45);\nmustEq(var x = 1; try { var x = 66; throw 789; } catch( e : Dynamic ) e + x, 790);\nmustEq(var x = 1; var f = function(x) throw x; try f(55) catch( e : Dynamic ) e + x, 56);\nmustEq(var i=2; if( true ) --i; i, 1);\nmustEq(var i=0; if( i++ > 0 ) i=3; i, 1);\nmustEq(var a = 5/2; a, 2.5);\nmustEq([for(i in 1...4) i*2].join('-'), \"2-4-6\");\nmustEq({ x = 3; x; }, 3);\nmustEq({ x : 3, y : {} }.x, 3);\nmustEq(function bug(){ \\n }\\nbug().x, null);\nmustEq(1 + 2 == 3, true);\nmustEq(-2 == 3 - 5, true);\ntrace(\"Done - all tests passed successfully\");");
 	var bytes = hscript.Bytes.encode(program);
 	program = hscript.Bytes.decode(bytes);
 	var interp = new hscript.JsJit();
-	if(vars != null) {
-		var _g = 0;
-		var _g1 = Reflect.fields(vars);
-		while(_g < _g1.length) {
-			var v1 = _g1[_g];
-			++_g;
-			var value = Reflect.field(vars,v1);
-			interp.variables.set(v1,value);
-		}
-	}
-	var ret = interp.execute(program);
-	if(v != ret) throw "" + Std.string(ret) + " returned while " + Std.string(v) + " expected";
-}
-Test.main = function(){
-	Test.test("0",0);
-	Test.test("0xFF",255);
-	Test.test("switch(29) {\r\n\t\t\tcase all if(all < 64):\r\n\t\t\t\t'goodbye';\r\n\t\t\tdefault: \r\n\t\t\t\t'hallo';\r\n\t\t}","goodbye");
-	Test.test("switch(5 * 5) {case 25: 1; default: 50;}",1);
-	Test.test("switch(5 * 5) {case 25 if(false): 1; default: 50;}",50);
-	Test.test("0xBFFFFFFF",-1073741825);
-	Test.test("0x7FFFFFFF",2147483647);
-	Test.test("-123",-123);
-	Test.test("- 123",-123);
-	Test.test("1.546",1.546);
-	Test.test(".545",.545);
-	Test.test("'bla'","bla");
-	Test.test("null",null);
-	Test.test("true",true);
-	Test.test("false",false);
-	Test.test("1 == 2",false);
-	Test.test("1.3 == 1.3",true);
-	Test.test("5 > 3",true);
-	Test.test("0 < 0",false);
-	Test.test("-1 <= -1",true);
-	Test.test("1 + 2",3);
-	Test.test("~545",-546);
-	Test.test("'abc' + 55","abc55");
-	Test.test("'abc' + 'de'","abcde");
-	Test.test("-1 + 2",1);
-	Test.test("1 / 5",0.2);
-	Test.test("3 * 2 + 5",11);
-	Test.test("3 * (2 + 5)",21);
-	Test.test("3 * 2 // + 5 \n + 6",12);
-	Test.test("3 /* 2\n */ + 5",8);
-	Test.test("[55,66,77][1]",66);
-	Test.test("var a = [55]; a[0] *= 2; a[0]",110);
-	Test.test("x",55,{ x : 55});
-	Test.test("var y = 33; y",33);
-	Test.test("{ 1; 2; 3; }",3);
-	Test.test("{ var x = 0; } x",55,{ x : 55});
-	Test.test("o.val",55,{ o : { val : 55}});
-	Test.test("o.val",null,{ o : { }});
-	Test.test("var a = 1; a++",1);
-	Test.test("var a = 1; a++; a",2);
-	Test.test("var a = 1; ++a",2);
-	Test.test("var a = 1; a *= 3",3);
-	Test.test("a = b = 3; a + b",6);
-	Test.test("add(1,2)",3,{ add : function(x,y){
-		return x + y;
-	}});
-	Test.test("a.push(5); a.pop() + a.pop()",8,{ a : [3]});
-	Test.test("if( true ) 1 else 2",1);
-	Test.test("if( false ) 1 else 2",2);
-	Test.test("var t = 0; for( x in [1,2,3] ) t += x; t",6);
-	Test.test("var a = new Array(); for( x in 0...5 ) a[x] = x; a.join('-')","0-1-2-3-4");
-	Test.test("(function(a,b) return a + b)(4,5)",9);
-	Test.test("var y = 0; var add = function(a) y += a; add(5); add(3); y",8);
-	Test.test("var a = [1,[2,[3,[4,null]]]]; var t = 0; while( a != null ) { t += a[0]; a = a[1]; }; t",10);
-	Test.test("var t = 0; for( x in 1...10 ) t += x; t",45);
-	Test.test("var t = 0; for( x in new IntIterator(1,10) ) t +=x; t",45);
-	Test.test("var x = 1; try { var x = 66; throw 789; } catch( e : Dynamic ) e + x",790);
-	Test.test("var x = 1; var f = function(x) throw x; try f(55) catch( e : Dynamic ) e + x",56);
-	Test.test("var i=2; if( true ) --i; i",1);
-	Test.test("var i=0; if( i++ > 0 ) i=3; i",1);
-	Test.test("var a = 5/2; a",2.5);
-	Test.test("[for(i in 1...4) i*2].join('-')","2-4-6");
-	Test.test("{ x = 3; x; }",3);
-	Test.test("{ x : 3, y : {} }.x",3);
-	Test.test("function bug(){ \n }\nbug().x",null);
-	Test.test("1 + 2 == 3",true);
-	Test.test("-2 == 3 - 5",true);
-	haxe.Log.trace("Done",{ fileName : "Test.hx", lineNumber : 96, className : "Test", methodName : "main"});
+	interp.execute(program);
 }
 var ValueType = $hxClasses["ValueType"] = { __ename__ : ["ValueType"], __constructs__ : ["TNull","TInt","TFloat","TBool","TObject","TFunction","TClass","TEnum","TUnknown"] }
 ValueType.TNull = ["TNull",0];
@@ -2304,6 +2223,19 @@ hscript.Error.EUnknownVariable = function(v) { var $x = ["EUnknownVariable",4,v]
 hscript.Error.EInvalidIterator = function(v) { var $x = ["EInvalidIterator",5,v]; $x.__enum__ = hscript.Error; $x.toString = $estr; return $x; }
 hscript.Error.EInvalidOp = function(op) { var $x = ["EInvalidOp",6,op]; $x.__enum__ = hscript.Error; $x.toString = $estr; return $x; }
 hscript.Error.EInvalidAccess = function(f) { var $x = ["EInvalidAccess",7,f]; $x.__enum__ = hscript.Error; $x.toString = $estr; return $x; }
+hscript.AtPos = function(v,pmin,pmax){
+	this._ = v;
+	this.pmin = pmin;
+	this.pmax = pmax;
+};
+$hxClasses["hscript.AtPos"] = hscript.AtPos;
+hscript.AtPos.__name__ = ["hscript","AtPos"];
+hscript.AtPos.prototype = {
+	pmax: null
+	,pmin: null
+	,_: null
+	,__class__: hscript.AtPos
+}
 hscript.JsJit = function(){
 	this.variables = new haxe.ds.StringMap();
 };
@@ -2848,7 +2780,7 @@ hscript.Parser.prototype = {
 				}
 			} catch( e ) {
 				this.line = old;
-				throw hscript.Error.EUnterminatedComment;
+				throw new hscript.AtPos(hscript.Error.EUnterminatedComment,0,0);
 			}
 			return this.token();
 		}
@@ -3610,7 +3542,7 @@ hscript.Parser.prototype = {
 				c = s.readByte();
 			} catch( e ) {
 				this.line = old;
-				throw hscript.Error.EUnterminatedString;
+				throw new hscript.AtPos(hscript.Error.EUnterminatedString,0,0);
 			}
 			if(esc) {
 				esc = false;
@@ -3637,7 +3569,7 @@ hscript.Parser.prototype = {
 						code = s.readString(4);
 					} catch( e ) {
 						this.line = old;
-						throw hscript.Error.EUnterminatedString;
+						throw new hscript.AtPos(hscript.Error.EUnterminatedString,0,0);
 					}
 					var k = 0;
 					var _g = 0;
@@ -4356,7 +4288,7 @@ hscript.Parser.prototype = {
 		this.tokens.add(tk);
 	}
 	,unexpected: function(tk){
-		throw hscript.Error.EUnexpected(this.tokenString(tk));
+		throw new hscript.AtPos(hscript.Error.EUnexpected(this.tokenString(tk)),0,0);
 		return null;
 	}
 	,parse: function(s){
@@ -4391,10 +4323,10 @@ hscript.Parser.prototype = {
 		return this.parse(new haxe.io.StringInput(s));
 	}
 	,invalidChar: function(c){
-		throw hscript.Error.EInvalidChar(c);
+		throw new hscript.AtPos(hscript.Error.EInvalidChar(c),0,0);
 	}
 	,error: function(err,pmin,pmax){
-		throw err;
+		throw new hscript.AtPos(err,pmin,pmax);
 	}
 	,tokens: null
 	,idents: null
@@ -4628,6 +4560,7 @@ if(Array.prototype.filter == null) Array.prototype.filter = function(f){
 	}
 	return a;
 };
+Test.TESTS_PATH = "tests.hxs";
 haxe.ds.ObjectMap.count = 0;
 haxe.io.Output.LN2 = Math.log(2);
 hscript.Parser.p1 = 0;
