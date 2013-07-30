@@ -104,3 +104,5 @@ enum Error {
 	EInvalidOp( op : String );
 	EInvalidAccess( f : String );
 }
+
+typedef ExprOf<T> = Expr;

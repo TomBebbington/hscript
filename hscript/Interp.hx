@@ -383,23 +383,35 @@ class Interp {
 				return o;
 			case ETernary(econd,e1,e2):
 				return if(expr(econd) == true) expr(e1) else expr(e2);
-			case ESwitch(e, cases, edef):
+			case ESwitch(ev, cases, edef):
+				var old = declared.length;
 				var def:Dynamic = edef == null ? null : expr(edef);
-				var val:Dynamic = expr(e);
+				var val:Dynamic = expr(ev);
+				declared.push({ n:"all", old:locals.get("all") });
+				locals.set("all", {r: val});
+				var retv:Dynamic = null;
 				for(c in cases) {
 					var matched = false;
 					for(v in c.values) {
-						if(expr(v) == val) {
-							matched = true;
-							break;
+						switch(v) {
+							case EIdent("all" | "_"):
+								matched = true;
+							case _ if(expr(v) == val):
+								matched = true;
+								break;
 						}
 					}
-					if(!matched || (c.guard != null && !expr(c.guard)))
-						continue;
-					return expr(c.expr);
+					if(c.guard != null)
+						matched = matched && expr(c.guard);
+					if(matched) {
+						retv = expr(c.expr);
+						break;
+					}
 				}
-				if(edef != null)
-					return expr(edef);
+				if(edef != null && retv == null) 
+					retv = expr(edef);
+				restore(old);
+				return retv;
 		}
 		return null;
 	}
@@ -433,6 +445,8 @@ class Interp {
 		var old = declared.length;
 		declared.push({ n:n, old:locals.get(n) });
 		var it = makeIterator(expr(it));
+		if(it == null)
+			throw "Iterator is null";
 		while(it.hasNext()) {
 			locals.set(n,{ r:it.next() });
 			try {

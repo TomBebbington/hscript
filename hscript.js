@@ -80,18 +80,15 @@ Test.test = function(x,v,vars){
 			interp.variables.set(v1,value);
 		}
 	}
-	var ret;
-	try {
-		ret = interp.execute(program);
-	} catch( e ) {
-		throw "" + Std.string(e) + " whilst executing " + x;
-	}
+	var ret = interp.execute(program);
 	if(v != ret) throw "" + Std.string(ret) + " returned while " + Std.string(v) + " expected";
 }
 Test.main = function(){
 	Test.test("0",0);
 	Test.test("0xFF",255);
+	Test.test("switch(29) {case all if(all < 64): 'goodbye'; default: 'hallo';}","goodbye");
 	Test.test("switch(5 * 5) {case 25: 1; default: 50;}",1);
+	Test.test("switch(5 * 5) {case 25 if(false): 1; default: 50;}",50);
 	Test.test("0xBFFFFFFF",-1073741825);
 	Test.test("0x7FFFFFFF",2147483647);
 	Test.test("-123",-123);
@@ -1529,132 +1526,729 @@ hscript.Parser.prototype = {
 			case 10:
 				this.line++;
 				break;
-			case 48:case 49:case 50:case 51:case 52:case 53:case 54:case 55:case 56:case 57:
-				var n = ($char - 48) * 1.0;
-				var exp = 0.;
-				while(true) {
-					$char = this.readChar();
-					exp *= 10;
-					switch($char) {
-					case 48:case 49:case 50:case 51:case 52:case 53:case 54:case 55:case 56:case 57:
-						n = n * 10 + ($char - 48);
-						break;
-					case 46:
-						if(exp > 0) {
-							if(exp == 10 && this.readChar() == 46) {
-								this.tokens.add(hscript.Token.TOp("..."));
-								var i = n | 0;
-								return hscript.Token.TConst(i == n?hscript.Const.CInt(i):hscript.Const.CFloat(n));
-							}
-							this.invalidChar($char);
-						}
-						exp = 1.;
-						break;
-					case 120:
-						if(n > 0 || exp > 0) this.invalidChar($char);
-						var n1 = 0;
-						while(true) {
-							$char = this.readChar();
-							switch($char) {
-							case 48:case 49:case 50:case 51:case 52:case 53:case 54:case 55:case 56:case 57:
-								n1 = (n1 << 4) + $char - 48;
-								break;
-							case 65:case 66:case 67:case 68:case 69:case 70:
-								n1 = (n1 << 4) + ($char - 55);
-								break;
-							case 97:case 98:case 99:case 100:case 101:case 102:
-								n1 = (n1 << 4) + ($char - 87);
-								break;
-							default:
-								this["char"] = $char;
-								return hscript.Token.TConst(hscript.Const.CInt(n1));
-							}
-						}
-						break;
-					default:
-						this["char"] = $char;
-						var i = n | 0;
-						return hscript.Token.TConst(exp > 0?hscript.Const.CFloat(n * 10 / exp):i == n?hscript.Const.CInt(i):hscript.Const.CFloat(n));
-					}
-				}
-				break;
 			case 59:
-				return hscript.Token.TSemicolon;
-			case 40:
-				return hscript.Token.TPOpen;
-			case 41:
-				return hscript.Token.TPClose;
-			case 44:
-				return hscript.Token.TComma;
-			case 46:
-				$char = this.readChar();
-				switch($char) {
-				case 48:case 49:case 50:case 51:case 52:case 53:case 54:case 55:case 56:case 57:
-					var n = $char - 48;
-					var exp = 1;
+				if($char >= 48 && $char <= 57) {
+					var n = ($char - 48) * 1.0;
+					var exp = 0.;
 					while(true) {
 						$char = this.readChar();
 						exp *= 10;
-						switch($char) {
-						case 48:case 49:case 50:case 51:case 52:case 53:case 54:case 55:case 56:case 57:
-							n = n * 10 + ($char - 48);
+						if($char >= 48 && $char <= 57) n = n * 10 + ($char - 48); else switch($char) {
+						case 46:
+							if(exp > 0) {
+								if(exp == 10 && this.readChar() == 46) {
+									this.tokens.add(hscript.Token.TOp("..."));
+									var i = n | 0;
+									return hscript.Token.TConst(i == n?hscript.Const.CInt(i):hscript.Const.CFloat(n));
+								}
+								this.invalidChar($char);
+							}
+							exp = 1.;
+							break;
+						case 120:
+							if(n > 0 || exp > 0) this.invalidChar($char);
+							var n1 = 0;
+							while(true) {
+								$char = this.readChar();
+								switch($char) {
+								case 48:case 49:case 50:case 51:case 52:case 53:case 54:case 55:case 56:case 57:
+									n1 = (n1 << 4) + $char - 48;
+									break;
+								case 65:case 66:case 67:case 68:case 69:case 70:
+									n1 = (n1 << 4) + ($char - 55);
+									break;
+								case 97:case 98:case 99:case 100:case 101:case 102:
+									n1 = (n1 << 4) + ($char - 87);
+									break;
+								default:
+									this["char"] = $char;
+									return hscript.Token.TConst(hscript.Const.CInt(n1));
+								}
+							}
 							break;
 						default:
 							this["char"] = $char;
-							return hscript.Token.TConst(hscript.Const.CFloat(n / exp));
+							var i = n | 0;
+							return hscript.Token.TConst(exp > 0?hscript.Const.CFloat(n * 10 / exp):i == n?hscript.Const.CInt(i):hscript.Const.CFloat(n));
 						}
 					}
-					break;
-				case 46:
+				} else return hscript.Token.TSemicolon;
+				break;
+			case 40:
+				if($char >= 48 && $char <= 57) {
+					var n = ($char - 48) * 1.0;
+					var exp = 0.;
+					while(true) {
+						$char = this.readChar();
+						exp *= 10;
+						if($char >= 48 && $char <= 57) n = n * 10 + ($char - 48); else switch($char) {
+						case 46:
+							if(exp > 0) {
+								if(exp == 10 && this.readChar() == 46) {
+									this.tokens.add(hscript.Token.TOp("..."));
+									var i = n | 0;
+									return hscript.Token.TConst(i == n?hscript.Const.CInt(i):hscript.Const.CFloat(n));
+								}
+								this.invalidChar($char);
+							}
+							exp = 1.;
+							break;
+						case 120:
+							if(n > 0 || exp > 0) this.invalidChar($char);
+							var n1 = 0;
+							while(true) {
+								$char = this.readChar();
+								switch($char) {
+								case 48:case 49:case 50:case 51:case 52:case 53:case 54:case 55:case 56:case 57:
+									n1 = (n1 << 4) + $char - 48;
+									break;
+								case 65:case 66:case 67:case 68:case 69:case 70:
+									n1 = (n1 << 4) + ($char - 55);
+									break;
+								case 97:case 98:case 99:case 100:case 101:case 102:
+									n1 = (n1 << 4) + ($char - 87);
+									break;
+								default:
+									this["char"] = $char;
+									return hscript.Token.TConst(hscript.Const.CInt(n1));
+								}
+							}
+							break;
+						default:
+							this["char"] = $char;
+							var i = n | 0;
+							return hscript.Token.TConst(exp > 0?hscript.Const.CFloat(n * 10 / exp):i == n?hscript.Const.CInt(i):hscript.Const.CFloat(n));
+						}
+					}
+				} else return hscript.Token.TPOpen;
+				break;
+			case 41:
+				if($char >= 48 && $char <= 57) {
+					var n = ($char - 48) * 1.0;
+					var exp = 0.;
+					while(true) {
+						$char = this.readChar();
+						exp *= 10;
+						if($char >= 48 && $char <= 57) n = n * 10 + ($char - 48); else switch($char) {
+						case 46:
+							if(exp > 0) {
+								if(exp == 10 && this.readChar() == 46) {
+									this.tokens.add(hscript.Token.TOp("..."));
+									var i = n | 0;
+									return hscript.Token.TConst(i == n?hscript.Const.CInt(i):hscript.Const.CFloat(n));
+								}
+								this.invalidChar($char);
+							}
+							exp = 1.;
+							break;
+						case 120:
+							if(n > 0 || exp > 0) this.invalidChar($char);
+							var n1 = 0;
+							while(true) {
+								$char = this.readChar();
+								switch($char) {
+								case 48:case 49:case 50:case 51:case 52:case 53:case 54:case 55:case 56:case 57:
+									n1 = (n1 << 4) + $char - 48;
+									break;
+								case 65:case 66:case 67:case 68:case 69:case 70:
+									n1 = (n1 << 4) + ($char - 55);
+									break;
+								case 97:case 98:case 99:case 100:case 101:case 102:
+									n1 = (n1 << 4) + ($char - 87);
+									break;
+								default:
+									this["char"] = $char;
+									return hscript.Token.TConst(hscript.Const.CInt(n1));
+								}
+							}
+							break;
+						default:
+							this["char"] = $char;
+							var i = n | 0;
+							return hscript.Token.TConst(exp > 0?hscript.Const.CFloat(n * 10 / exp):i == n?hscript.Const.CInt(i):hscript.Const.CFloat(n));
+						}
+					}
+				} else return hscript.Token.TPClose;
+				break;
+			case 44:
+				if($char >= 48 && $char <= 57) {
+					var n = ($char - 48) * 1.0;
+					var exp = 0.;
+					while(true) {
+						$char = this.readChar();
+						exp *= 10;
+						if($char >= 48 && $char <= 57) n = n * 10 + ($char - 48); else switch($char) {
+						case 46:
+							if(exp > 0) {
+								if(exp == 10 && this.readChar() == 46) {
+									this.tokens.add(hscript.Token.TOp("..."));
+									var i = n | 0;
+									return hscript.Token.TConst(i == n?hscript.Const.CInt(i):hscript.Const.CFloat(n));
+								}
+								this.invalidChar($char);
+							}
+							exp = 1.;
+							break;
+						case 120:
+							if(n > 0 || exp > 0) this.invalidChar($char);
+							var n1 = 0;
+							while(true) {
+								$char = this.readChar();
+								switch($char) {
+								case 48:case 49:case 50:case 51:case 52:case 53:case 54:case 55:case 56:case 57:
+									n1 = (n1 << 4) + $char - 48;
+									break;
+								case 65:case 66:case 67:case 68:case 69:case 70:
+									n1 = (n1 << 4) + ($char - 55);
+									break;
+								case 97:case 98:case 99:case 100:case 101:case 102:
+									n1 = (n1 << 4) + ($char - 87);
+									break;
+								default:
+									this["char"] = $char;
+									return hscript.Token.TConst(hscript.Const.CInt(n1));
+								}
+							}
+							break;
+						default:
+							this["char"] = $char;
+							var i = n | 0;
+							return hscript.Token.TConst(exp > 0?hscript.Const.CFloat(n * 10 / exp):i == n?hscript.Const.CInt(i):hscript.Const.CFloat(n));
+						}
+					}
+				} else return hscript.Token.TComma;
+				break;
+			case 46:
+				if($char >= 48 && $char <= 57) {
+					var n = ($char - 48) * 1.0;
+					var exp = 0.;
+					while(true) {
+						$char = this.readChar();
+						exp *= 10;
+						if($char >= 48 && $char <= 57) n = n * 10 + ($char - 48); else switch($char) {
+						case 46:
+							if(exp > 0) {
+								if(exp == 10 && this.readChar() == 46) {
+									this.tokens.add(hscript.Token.TOp("..."));
+									var i = n | 0;
+									return hscript.Token.TConst(i == n?hscript.Const.CInt(i):hscript.Const.CFloat(n));
+								}
+								this.invalidChar($char);
+							}
+							exp = 1.;
+							break;
+						case 120:
+							if(n > 0 || exp > 0) this.invalidChar($char);
+							var n1 = 0;
+							while(true) {
+								$char = this.readChar();
+								switch($char) {
+								case 48:case 49:case 50:case 51:case 52:case 53:case 54:case 55:case 56:case 57:
+									n1 = (n1 << 4) + $char - 48;
+									break;
+								case 65:case 66:case 67:case 68:case 69:case 70:
+									n1 = (n1 << 4) + ($char - 55);
+									break;
+								case 97:case 98:case 99:case 100:case 101:case 102:
+									n1 = (n1 << 4) + ($char - 87);
+									break;
+								default:
+									this["char"] = $char;
+									return hscript.Token.TConst(hscript.Const.CInt(n1));
+								}
+							}
+							break;
+						default:
+							this["char"] = $char;
+							var i = n | 0;
+							return hscript.Token.TConst(exp > 0?hscript.Const.CFloat(n * 10 / exp):i == n?hscript.Const.CInt(i):hscript.Const.CFloat(n));
+						}
+					}
+				} else {
 					$char = this.readChar();
-					if($char != 46) this.invalidChar($char);
-					return hscript.Token.TOp("...");
-				default:
-					this["char"] = $char;
-					return hscript.Token.TDot;
+					switch($char) {
+					case 48:case 49:case 50:case 51:case 52:case 53:case 54:case 55:case 56:case 57:
+						var n = $char - 48;
+						var exp = 1;
+						while(true) {
+							$char = this.readChar();
+							exp *= 10;
+							switch($char) {
+							case 48:case 49:case 50:case 51:case 52:case 53:case 54:case 55:case 56:case 57:
+								n = n * 10 + ($char - 48);
+								break;
+							default:
+								this["char"] = $char;
+								return hscript.Token.TConst(hscript.Const.CFloat(n / exp));
+							}
+						}
+						break;
+					case 46:
+						$char = this.readChar();
+						if($char != 46) this.invalidChar($char);
+						return hscript.Token.TOp("...");
+					default:
+						this["char"] = $char;
+						return hscript.Token.TDot;
+					}
 				}
 				break;
 			case 123:
-				return hscript.Token.TBrOpen;
+				if($char >= 48 && $char <= 57) {
+					var n = ($char - 48) * 1.0;
+					var exp = 0.;
+					while(true) {
+						$char = this.readChar();
+						exp *= 10;
+						if($char >= 48 && $char <= 57) n = n * 10 + ($char - 48); else switch($char) {
+						case 46:
+							if(exp > 0) {
+								if(exp == 10 && this.readChar() == 46) {
+									this.tokens.add(hscript.Token.TOp("..."));
+									var i = n | 0;
+									return hscript.Token.TConst(i == n?hscript.Const.CInt(i):hscript.Const.CFloat(n));
+								}
+								this.invalidChar($char);
+							}
+							exp = 1.;
+							break;
+						case 120:
+							if(n > 0 || exp > 0) this.invalidChar($char);
+							var n1 = 0;
+							while(true) {
+								$char = this.readChar();
+								switch($char) {
+								case 48:case 49:case 50:case 51:case 52:case 53:case 54:case 55:case 56:case 57:
+									n1 = (n1 << 4) + $char - 48;
+									break;
+								case 65:case 66:case 67:case 68:case 69:case 70:
+									n1 = (n1 << 4) + ($char - 55);
+									break;
+								case 97:case 98:case 99:case 100:case 101:case 102:
+									n1 = (n1 << 4) + ($char - 87);
+									break;
+								default:
+									this["char"] = $char;
+									return hscript.Token.TConst(hscript.Const.CInt(n1));
+								}
+							}
+							break;
+						default:
+							this["char"] = $char;
+							var i = n | 0;
+							return hscript.Token.TConst(exp > 0?hscript.Const.CFloat(n * 10 / exp):i == n?hscript.Const.CInt(i):hscript.Const.CFloat(n));
+						}
+					}
+				} else return hscript.Token.TBrOpen;
+				break;
 			case 125:
-				return hscript.Token.TBrClose;
+				if($char >= 48 && $char <= 57) {
+					var n = ($char - 48) * 1.0;
+					var exp = 0.;
+					while(true) {
+						$char = this.readChar();
+						exp *= 10;
+						if($char >= 48 && $char <= 57) n = n * 10 + ($char - 48); else switch($char) {
+						case 46:
+							if(exp > 0) {
+								if(exp == 10 && this.readChar() == 46) {
+									this.tokens.add(hscript.Token.TOp("..."));
+									var i = n | 0;
+									return hscript.Token.TConst(i == n?hscript.Const.CInt(i):hscript.Const.CFloat(n));
+								}
+								this.invalidChar($char);
+							}
+							exp = 1.;
+							break;
+						case 120:
+							if(n > 0 || exp > 0) this.invalidChar($char);
+							var n1 = 0;
+							while(true) {
+								$char = this.readChar();
+								switch($char) {
+								case 48:case 49:case 50:case 51:case 52:case 53:case 54:case 55:case 56:case 57:
+									n1 = (n1 << 4) + $char - 48;
+									break;
+								case 65:case 66:case 67:case 68:case 69:case 70:
+									n1 = (n1 << 4) + ($char - 55);
+									break;
+								case 97:case 98:case 99:case 100:case 101:case 102:
+									n1 = (n1 << 4) + ($char - 87);
+									break;
+								default:
+									this["char"] = $char;
+									return hscript.Token.TConst(hscript.Const.CInt(n1));
+								}
+							}
+							break;
+						default:
+							this["char"] = $char;
+							var i = n | 0;
+							return hscript.Token.TConst(exp > 0?hscript.Const.CFloat(n * 10 / exp):i == n?hscript.Const.CInt(i):hscript.Const.CFloat(n));
+						}
+					}
+				} else return hscript.Token.TBrClose;
+				break;
 			case 91:
-				return hscript.Token.TBkOpen;
+				if($char >= 48 && $char <= 57) {
+					var n = ($char - 48) * 1.0;
+					var exp = 0.;
+					while(true) {
+						$char = this.readChar();
+						exp *= 10;
+						if($char >= 48 && $char <= 57) n = n * 10 + ($char - 48); else switch($char) {
+						case 46:
+							if(exp > 0) {
+								if(exp == 10 && this.readChar() == 46) {
+									this.tokens.add(hscript.Token.TOp("..."));
+									var i = n | 0;
+									return hscript.Token.TConst(i == n?hscript.Const.CInt(i):hscript.Const.CFloat(n));
+								}
+								this.invalidChar($char);
+							}
+							exp = 1.;
+							break;
+						case 120:
+							if(n > 0 || exp > 0) this.invalidChar($char);
+							var n1 = 0;
+							while(true) {
+								$char = this.readChar();
+								switch($char) {
+								case 48:case 49:case 50:case 51:case 52:case 53:case 54:case 55:case 56:case 57:
+									n1 = (n1 << 4) + $char - 48;
+									break;
+								case 65:case 66:case 67:case 68:case 69:case 70:
+									n1 = (n1 << 4) + ($char - 55);
+									break;
+								case 97:case 98:case 99:case 100:case 101:case 102:
+									n1 = (n1 << 4) + ($char - 87);
+									break;
+								default:
+									this["char"] = $char;
+									return hscript.Token.TConst(hscript.Const.CInt(n1));
+								}
+							}
+							break;
+						default:
+							this["char"] = $char;
+							var i = n | 0;
+							return hscript.Token.TConst(exp > 0?hscript.Const.CFloat(n * 10 / exp):i == n?hscript.Const.CInt(i):hscript.Const.CFloat(n));
+						}
+					}
+				} else return hscript.Token.TBkOpen;
+				break;
 			case 93:
-				return hscript.Token.TBkClose;
+				if($char >= 48 && $char <= 57) {
+					var n = ($char - 48) * 1.0;
+					var exp = 0.;
+					while(true) {
+						$char = this.readChar();
+						exp *= 10;
+						if($char >= 48 && $char <= 57) n = n * 10 + ($char - 48); else switch($char) {
+						case 46:
+							if(exp > 0) {
+								if(exp == 10 && this.readChar() == 46) {
+									this.tokens.add(hscript.Token.TOp("..."));
+									var i = n | 0;
+									return hscript.Token.TConst(i == n?hscript.Const.CInt(i):hscript.Const.CFloat(n));
+								}
+								this.invalidChar($char);
+							}
+							exp = 1.;
+							break;
+						case 120:
+							if(n > 0 || exp > 0) this.invalidChar($char);
+							var n1 = 0;
+							while(true) {
+								$char = this.readChar();
+								switch($char) {
+								case 48:case 49:case 50:case 51:case 52:case 53:case 54:case 55:case 56:case 57:
+									n1 = (n1 << 4) + $char - 48;
+									break;
+								case 65:case 66:case 67:case 68:case 69:case 70:
+									n1 = (n1 << 4) + ($char - 55);
+									break;
+								case 97:case 98:case 99:case 100:case 101:case 102:
+									n1 = (n1 << 4) + ($char - 87);
+									break;
+								default:
+									this["char"] = $char;
+									return hscript.Token.TConst(hscript.Const.CInt(n1));
+								}
+							}
+							break;
+						default:
+							this["char"] = $char;
+							var i = n | 0;
+							return hscript.Token.TConst(exp > 0?hscript.Const.CFloat(n * 10 / exp):i == n?hscript.Const.CInt(i):hscript.Const.CFloat(n));
+						}
+					}
+				} else return hscript.Token.TBkClose;
+				break;
 			case 39:
-				return hscript.Token.TConst(hscript.Const.CString(this.readString(39)));
+				if($char >= 48 && $char <= 57) {
+					var n = ($char - 48) * 1.0;
+					var exp = 0.;
+					while(true) {
+						$char = this.readChar();
+						exp *= 10;
+						if($char >= 48 && $char <= 57) n = n * 10 + ($char - 48); else switch($char) {
+						case 46:
+							if(exp > 0) {
+								if(exp == 10 && this.readChar() == 46) {
+									this.tokens.add(hscript.Token.TOp("..."));
+									var i = n | 0;
+									return hscript.Token.TConst(i == n?hscript.Const.CInt(i):hscript.Const.CFloat(n));
+								}
+								this.invalidChar($char);
+							}
+							exp = 1.;
+							break;
+						case 120:
+							if(n > 0 || exp > 0) this.invalidChar($char);
+							var n1 = 0;
+							while(true) {
+								$char = this.readChar();
+								switch($char) {
+								case 48:case 49:case 50:case 51:case 52:case 53:case 54:case 55:case 56:case 57:
+									n1 = (n1 << 4) + $char - 48;
+									break;
+								case 65:case 66:case 67:case 68:case 69:case 70:
+									n1 = (n1 << 4) + ($char - 55);
+									break;
+								case 97:case 98:case 99:case 100:case 101:case 102:
+									n1 = (n1 << 4) + ($char - 87);
+									break;
+								default:
+									this["char"] = $char;
+									return hscript.Token.TConst(hscript.Const.CInt(n1));
+								}
+							}
+							break;
+						default:
+							this["char"] = $char;
+							var i = n | 0;
+							return hscript.Token.TConst(exp > 0?hscript.Const.CFloat(n * 10 / exp):i == n?hscript.Const.CInt(i):hscript.Const.CFloat(n));
+						}
+					}
+				} else return hscript.Token.TConst(hscript.Const.CString(this.readString(39)));
+				break;
 			case 34:
-				return hscript.Token.TConst(hscript.Const.CString(this.readString(34)));
+				if($char >= 48 && $char <= 57) {
+					var n = ($char - 48) * 1.0;
+					var exp = 0.;
+					while(true) {
+						$char = this.readChar();
+						exp *= 10;
+						if($char >= 48 && $char <= 57) n = n * 10 + ($char - 48); else switch($char) {
+						case 46:
+							if(exp > 0) {
+								if(exp == 10 && this.readChar() == 46) {
+									this.tokens.add(hscript.Token.TOp("..."));
+									var i = n | 0;
+									return hscript.Token.TConst(i == n?hscript.Const.CInt(i):hscript.Const.CFloat(n));
+								}
+								this.invalidChar($char);
+							}
+							exp = 1.;
+							break;
+						case 120:
+							if(n > 0 || exp > 0) this.invalidChar($char);
+							var n1 = 0;
+							while(true) {
+								$char = this.readChar();
+								switch($char) {
+								case 48:case 49:case 50:case 51:case 52:case 53:case 54:case 55:case 56:case 57:
+									n1 = (n1 << 4) + $char - 48;
+									break;
+								case 65:case 66:case 67:case 68:case 69:case 70:
+									n1 = (n1 << 4) + ($char - 55);
+									break;
+								case 97:case 98:case 99:case 100:case 101:case 102:
+									n1 = (n1 << 4) + ($char - 87);
+									break;
+								default:
+									this["char"] = $char;
+									return hscript.Token.TConst(hscript.Const.CInt(n1));
+								}
+							}
+							break;
+						default:
+							this["char"] = $char;
+							var i = n | 0;
+							return hscript.Token.TConst(exp > 0?hscript.Const.CFloat(n * 10 / exp):i == n?hscript.Const.CInt(i):hscript.Const.CFloat(n));
+						}
+					}
+				} else return hscript.Token.TConst(hscript.Const.CString(this.readString(34)));
+				break;
 			case 63:
-				return hscript.Token.TQuestion;
+				if($char >= 48 && $char <= 57) {
+					var n = ($char - 48) * 1.0;
+					var exp = 0.;
+					while(true) {
+						$char = this.readChar();
+						exp *= 10;
+						if($char >= 48 && $char <= 57) n = n * 10 + ($char - 48); else switch($char) {
+						case 46:
+							if(exp > 0) {
+								if(exp == 10 && this.readChar() == 46) {
+									this.tokens.add(hscript.Token.TOp("..."));
+									var i = n | 0;
+									return hscript.Token.TConst(i == n?hscript.Const.CInt(i):hscript.Const.CFloat(n));
+								}
+								this.invalidChar($char);
+							}
+							exp = 1.;
+							break;
+						case 120:
+							if(n > 0 || exp > 0) this.invalidChar($char);
+							var n1 = 0;
+							while(true) {
+								$char = this.readChar();
+								switch($char) {
+								case 48:case 49:case 50:case 51:case 52:case 53:case 54:case 55:case 56:case 57:
+									n1 = (n1 << 4) + $char - 48;
+									break;
+								case 65:case 66:case 67:case 68:case 69:case 70:
+									n1 = (n1 << 4) + ($char - 55);
+									break;
+								case 97:case 98:case 99:case 100:case 101:case 102:
+									n1 = (n1 << 4) + ($char - 87);
+									break;
+								default:
+									this["char"] = $char;
+									return hscript.Token.TConst(hscript.Const.CInt(n1));
+								}
+							}
+							break;
+						default:
+							this["char"] = $char;
+							var i = n | 0;
+							return hscript.Token.TConst(exp > 0?hscript.Const.CFloat(n * 10 / exp):i == n?hscript.Const.CInt(i):hscript.Const.CFloat(n));
+						}
+					}
+				} else return hscript.Token.TQuestion;
+				break;
 			case 58:
-				return hscript.Token.TDoubleDot;
+				if($char >= 48 && $char <= 57) {
+					var n = ($char - 48) * 1.0;
+					var exp = 0.;
+					while(true) {
+						$char = this.readChar();
+						exp *= 10;
+						if($char >= 48 && $char <= 57) n = n * 10 + ($char - 48); else switch($char) {
+						case 46:
+							if(exp > 0) {
+								if(exp == 10 && this.readChar() == 46) {
+									this.tokens.add(hscript.Token.TOp("..."));
+									var i = n | 0;
+									return hscript.Token.TConst(i == n?hscript.Const.CInt(i):hscript.Const.CFloat(n));
+								}
+								this.invalidChar($char);
+							}
+							exp = 1.;
+							break;
+						case 120:
+							if(n > 0 || exp > 0) this.invalidChar($char);
+							var n1 = 0;
+							while(true) {
+								$char = this.readChar();
+								switch($char) {
+								case 48:case 49:case 50:case 51:case 52:case 53:case 54:case 55:case 56:case 57:
+									n1 = (n1 << 4) + $char - 48;
+									break;
+								case 65:case 66:case 67:case 68:case 69:case 70:
+									n1 = (n1 << 4) + ($char - 55);
+									break;
+								case 97:case 98:case 99:case 100:case 101:case 102:
+									n1 = (n1 << 4) + ($char - 87);
+									break;
+								default:
+									this["char"] = $char;
+									return hscript.Token.TConst(hscript.Const.CInt(n1));
+								}
+							}
+							break;
+						default:
+							this["char"] = $char;
+							var i = n | 0;
+							return hscript.Token.TConst(exp > 0?hscript.Const.CFloat(n * 10 / exp):i == n?hscript.Const.CInt(i):hscript.Const.CFloat(n));
+						}
+					}
+				} else return hscript.Token.TDoubleDot;
+				break;
 			default:
-				if(this.ops[$char]) {
-					var op = String.fromCharCode($char);
+				if($char >= 48 && $char <= 57) {
+					var n = ($char - 48) * 1.0;
+					var exp = 0.;
 					while(true) {
 						$char = this.readChar();
-						if(!this.ops[$char]) {
-							if(HxOverrides.cca(op,0) == 47) return this.tokenComment(op,$char);
+						exp *= 10;
+						if($char >= 48 && $char <= 57) n = n * 10 + ($char - 48); else switch($char) {
+						case 46:
+							if(exp > 0) {
+								if(exp == 10 && this.readChar() == 46) {
+									this.tokens.add(hscript.Token.TOp("..."));
+									var i = n | 0;
+									return hscript.Token.TConst(i == n?hscript.Const.CInt(i):hscript.Const.CFloat(n));
+								}
+								this.invalidChar($char);
+							}
+							exp = 1.;
+							break;
+						case 120:
+							if(n > 0 || exp > 0) this.invalidChar($char);
+							var n1 = 0;
+							while(true) {
+								$char = this.readChar();
+								switch($char) {
+								case 48:case 49:case 50:case 51:case 52:case 53:case 54:case 55:case 56:case 57:
+									n1 = (n1 << 4) + $char - 48;
+									break;
+								case 65:case 66:case 67:case 68:case 69:case 70:
+									n1 = (n1 << 4) + ($char - 55);
+									break;
+								case 97:case 98:case 99:case 100:case 101:case 102:
+									n1 = (n1 << 4) + ($char - 87);
+									break;
+								default:
+									this["char"] = $char;
+									return hscript.Token.TConst(hscript.Const.CInt(n1));
+								}
+							}
+							break;
+						default:
 							this["char"] = $char;
-							return hscript.Token.TOp(op);
+							var i = n | 0;
+							return hscript.Token.TConst(exp > 0?hscript.Const.CFloat(n * 10 / exp):i == n?hscript.Const.CInt(i):hscript.Const.CFloat(n));
 						}
-						op += String.fromCharCode($char);
 					}
-				}
-				if(this.idents[$char]) {
-					var id = String.fromCharCode($char);
-					while(true) {
-						$char = this.readChar();
-						if(!this.idents[$char]) {
-							this["char"] = $char;
-							return hscript.Token.TId(id);
+				} else {
+					if(this.ops[$char]) {
+						var op = String.fromCharCode($char);
+						while(true) {
+							$char = this.readChar();
+							if(!this.ops[$char]) {
+								if(HxOverrides.cca(op,0) == 47) return this.tokenComment(op,$char);
+								this["char"] = $char;
+								return hscript.Token.TOp(op);
+							}
+							op += String.fromCharCode($char);
 						}
-						id += String.fromCharCode($char);
 					}
+					if(this.idents[$char]) {
+						var id = String.fromCharCode($char);
+						while(true) {
+							$char = this.readChar();
+							if(!this.idents[$char]) {
+								this["char"] = $char;
+								return hscript.Token.TId(id);
+							}
+							id += String.fromCharCode($char);
+						}
+					}
+					this.invalidChar($char);
 				}
-				this.invalidChar($char);
 			}
 			$char = this.readChar();
 		}
@@ -2002,6 +2596,7 @@ hscript.Parser.prototype = {
 						case "case":
 							var allowed = [];
 							allowed.push(this.parseExpr());
+							var guard = null;
 							var ntk = null;
 							try {
 								while(true) {
@@ -2014,10 +2609,26 @@ hscript.Parser.prototype = {
 										case "|":
 											break;
 										default:
+											console.log(ntk);
+											throw "__break__";
+										}
+										break;
+									case 2:
+										switch(_g[2]) {
+										case "if":
+											this.ensure(hscript.Token.TPOpen);
+											guard = this.parseExpr();
+											this.ensure(hscript.Token.TPClose);
+											ntk = this.token();
+											throw "__break__";
+											break;
+										default:
+											console.log(ntk);
 											throw "__break__";
 										}
 										break;
 									default:
+										console.log(ntk);
 										throw "__break__";
 									}
 									allowed.push(this.parseExpr());
@@ -2027,15 +2638,15 @@ hscript.Parser.prototype = {
 							case 14:
 								break;
 							default:
-								this.unexpected(tk);
+								this.unexpected(ntk);
 							}
 							var expr = this.parseExpr();
 							this.ensure(hscript.Token.TSemicolon);
-							cases.push({ values : allowed, expr : expr});
+							cases.push({ values : allowed, expr : expr, guard : guard});
 							break;
 						case "default":
 							this.ensure(hscript.Token.TDoubleDot);
-							var expr = this.parseExpr();
+							def = this.parseExpr();
 							this.ensure(hscript.Token.TSemicolon);
 							break;
 						default:

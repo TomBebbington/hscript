@@ -10,14 +10,16 @@ class Test {
 		if( vars != null )
 			for( v in Reflect.fields(vars) )
 				interp.variables.set(v,Reflect.field(vars,v));
-		var ret : Dynamic = try interp.execute(program) catch(e:Dynamic) throw '$e whilst executing $x';
+		var ret : Dynamic = interp.execute(program);
 		if(v != ret) throw '$ret returned while $v expected';
 	}
 
 	static function main() {
 		test("0",0);
 		test("0xFF", 255);
+		test("switch(29) {case all if(all < 64): 'goodbye'; default: 'hallo';}", "goodbye");
 		test("switch(5 * 5) {case 25: 1; default: 50;}", 1);
+		test("switch(5 * 5) {case 25 if(false): 1; default: 50;}", 50);
 		#if haxe3
 		test("0xBFFFFFFF",0xBFFFFFFF);
 		test("0x7FFFFFFF", 0x7FFFFFFF);

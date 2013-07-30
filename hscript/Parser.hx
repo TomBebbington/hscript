@@ -469,25 +469,32 @@ class Parser {
 					case TId("case"):
 						var allowed:Array<Expr> = [];
 						allowed.push(parseExpr());
+						var guard:Expr = null;
 						var ntk = null;
 						while(true) {
 							switch(ntk = token()) {
 								case Token.TComma | Token.TOp("|"):
 
-								default: break;
+								case Token.TId("if"):
+									ensure(TPOpen);
+									guard = parseExpr();
+									ensure(TPClose);
+									ntk = token();
+									break;
+								default: trace(ntk); break;
 							}
 							allowed.push(parseExpr());
 						}
 						switch(ntk) {
-							case TDoubleDot: 
-							default: unexpected(tk);
+							case TDoubleDot:
+							default: unexpected(ntk);
 						}
 						var expr:Expr = parseExpr();
 						ensure(TSemicolon);
-						cases.push({values: allowed, expr: expr});
+						cases.push({values: allowed, expr: expr, guard: guard});
 					case TId("default"):
 						ensure(TDoubleDot);
-						var expr:Expr = parseExpr();
+						def = parseExpr();
 						ensure(TSemicolon);
 					case TBrClose:
 						break;
@@ -874,14 +881,14 @@ class Parser {
 				#if hscriptPos
 				tokenMin++;
 				#end
-			case 48,49,50,51,52,53,54,55,56,57: // 0...9
+			case _ if(char >= 48 && char <= 57): // 0...9
 				var n = (char - 48) * 1.0;
 				var exp = 0.;
 				while( true ) {
 					char = readChar();
 					exp *= 10;
 					switch( char ) {
-					case 48,49,50,51,52,53,54,55,56,57:
+					case _ if(char >= 48 && char <= 57):
 						n = n * 10 + (char - 48);
 					case 46:
 						if( exp > 0 ) {
