@@ -8,11 +8,62 @@ function $extend(from, fields) {
 }
 var HxOverrides = function() { }
 $hxClasses["HxOverrides"] = HxOverrides;
-HxOverrides.__name__ = true;
+HxOverrides.__name__ = ["HxOverrides"];
+HxOverrides.dateStr = function(date){
+	var m = date.getMonth() + 1;
+	var d = date.getDate();
+	var h = date.getHours();
+	var mi = date.getMinutes();
+	var s = date.getSeconds();
+	return date.getFullYear() + "-" + (m < 10?"0" + m:"" + m) + "-" + (d < 10?"0" + d:"" + d) + " " + (h < 10?"0" + h:"" + h) + ":" + (mi < 10?"0" + mi:"" + mi) + ":" + (s < 10?"0" + s:"" + s);
+}
+HxOverrides.strDate = function(s){
+	switch(s.length) {
+	case 8:
+		var k = s.split(":");
+		var d = new Date();
+		d.setTime(0);
+		d.setUTCHours(k[0]);
+		d.setUTCMinutes(k[1]);
+		d.setUTCSeconds(k[2]);
+		return d;
+	case 10:
+		var k = s.split("-");
+		return new Date(k[0],k[1] - 1,k[2],0,0,0);
+	case 19:
+		var k = s.split(" ");
+		var y = k[0].split("-");
+		var t = k[1].split(":");
+		return new Date(y[0],y[1] - 1,y[2],t[0],t[1],t[2]);
+	default:
+		throw "Invalid date format : " + s;
+	}
+}
 HxOverrides.cca = function(s,index){
 	var x = s.charCodeAt(index);
 	if(x != x) return undefined;
 	return x;
+}
+HxOverrides.substr = function(s,pos,len){
+	if(pos != null && pos != 0 && len != null && len < 0) return "";
+	if(len == null) len = s.length;
+	if(pos < 0) {
+		pos = s.length + pos;
+		if(pos < 0) pos = 0;
+	} else if(len < 0) len = s.length + len - pos;
+	return s.substr(pos,len);
+}
+HxOverrides.remove = function(a,obj){
+	var i = 0;
+	var l = a.length;
+	while(i < l) {
+		if(a[i] == obj) {
+			a.splice(i,1);
+			return true;
+		}
+		i++;
+	}
+	return false;
 }
 HxOverrides.iter = function(a){
 	return { cur : 0, arr : a, hasNext : function(){
@@ -21,12 +72,93 @@ HxOverrides.iter = function(a){
 		return this.arr[this.cur++];
 	}};
 }
+var IntIterator = function(min,max){
+	this.min = min;
+	this.max = max;
+};
+$hxClasses["IntIterator"] = IntIterator;
+IntIterator.__name__ = ["IntIterator"];
+IntIterator.prototype = {
+	next: function(){
+		return this.min++;
+	}
+	,hasNext: function(){
+		return this.min < this.max;
+	}
+	,max: null
+	,min: null
+	,__class__: IntIterator
+}
+var _Map = {}
+_Map.Map_Impl_ = function() { }
+$hxClasses["_Map.Map_Impl_"] = _Map.Map_Impl_;
+_Map.Map_Impl_.__name__ = ["_Map","Map_Impl_"];
+_Map.Map_Impl_._new = null;
+_Map.Map_Impl_.set = function(this1,key,value){
+	this1.set(key,value);
+}
+_Map.Map_Impl_.get = function(this1,key){
+	return this1.get(key);
+}
+_Map.Map_Impl_.exists = function(this1,key){
+	return this1.exists(key);
+}
+_Map.Map_Impl_.remove = function(this1,key){
+	return this1.remove(key);
+}
+_Map.Map_Impl_.keys = function(this1){
+	return this1.keys();
+}
+_Map.Map_Impl_.iterator = function(this1){
+	return this1.iterator();
+}
+_Map.Map_Impl_.toString = function(this1){
+	return this1.toString();
+}
+_Map.Map_Impl_.arrayWrite = function(this1,k,v){
+	this1.set(k,v);
+	return v;
+}
+_Map.Map_Impl_.toStringMap = function(t){
+	return new haxe.ds.StringMap();
+}
+_Map.Map_Impl_.toIntMap = function(t){
+	return new haxe.ds.IntMap();
+}
+_Map.Map_Impl_.toEnumValueMapMap = function(t){
+	return new haxe.ds.EnumValueMap();
+}
+_Map.Map_Impl_.toObjectMap = function(t){
+	return new haxe.ds.ObjectMap();
+}
+_Map.Map_Impl_.fromStringMap = function(map){
+	return map;
+}
+_Map.Map_Impl_.fromIntMap = function(map){
+	return map;
+}
+_Map.Map_Impl_.fromObjectMap = function(map){
+	return map;
+}
 var IMap = function() { }
 $hxClasses["IMap"] = IMap;
-IMap.__name__ = true;
+IMap.__name__ = ["IMap"];
+IMap.prototype = {
+	toString: null
+	,iterator: null
+	,keys: null
+	,remove: null
+	,exists: null
+	,set: null
+	,get: null
+	,__class__: IMap
+}
 var Reflect = function() { }
 $hxClasses["Reflect"] = Reflect;
-Reflect.__name__ = true;
+Reflect.__name__ = ["Reflect"];
+Reflect.hasField = function(o,field){
+	return Object.prototype.hasOwnProperty.call(o,field);
+}
 Reflect.field = function(o,field){
 	var v = null;
 	try {
@@ -34,6 +166,20 @@ Reflect.field = function(o,field){
 	} catch( e ) {
 	}
 	return v;
+}
+Reflect.setField = function(o,field,value){
+	o[field] = value;
+}
+Reflect.getProperty = function(o,field){
+	var tmp;
+	if(o == null) return null; else if(o.__properties__ && (tmp = o.__properties__["get_" + field])) return o[tmp](); else return o[field];
+}
+Reflect.setProperty = function(o,field,value){
+	var tmp;
+	if(o.__properties__ && (tmp = o.__properties__["set_" + field])) o[tmp](value); else o[field] = value;
+}
+Reflect.callMethod = function(o,func,args){
+	return func.apply(o,args);
 }
 Reflect.fields = function(o){
 	var a = [];
@@ -45,26 +191,175 @@ Reflect.fields = function(o){
 	}
 	return a;
 }
+Reflect.isFunction = function(f){
+	return typeof(f) == "function" && !(f.__name__ || f.__ename__);
+}
+Reflect.compare = function(a,b){
+	if(a == b) return 0; else if(a > b) return 1; else return -1;
+}
+Reflect.compareMethods = function(f1,f2){
+	if(f1 == f2) return true;
+	if(!Reflect.isFunction(f1) || !Reflect.isFunction(f2)) return false;
+	return f1.scope == f2.scope && f1.method == f2.method && f1.method != null;
+}
+Reflect.isObject = function(v){
+	if(v == null) return false;
+	var t = typeof(v);
+	return t == "string" || t == "object" && v.__enum__ == null || t == "function" && (v.__name__ || v.__ename__) != null;
+}
+Reflect.isEnumValue = function(v){
+	return v != null && v.__enum__ != null;
+}
+Reflect.deleteField = function(o,field){
+	if(!Reflect.hasField(o,field)) return false;
+	delete(o[field]);
+	return true;
+}
+Reflect.copy = function(o){
+	var o2 = { };
+	var _g = 0;
+	var _g1 = Reflect.fields(o);
+	while(_g < _g1.length) {
+		var f = _g1[_g];
+		++_g;
+		o2[f] = Reflect.field(o,f);
+	}
+	return o2;
+}
+Reflect.makeVarArgs = function(f){
+	return function(){
+		var a = Array.prototype.slice.call(arguments);
+		return f(a);
+	};
+}
 var Std = function() { }
 $hxClasses["Std"] = Std;
-Std.__name__ = true;
+Std.__name__ = ["Std"];
+Std["is"] = function(v,t){
+	return js.Boot.__instanceof(v,t);
+}
+Std.instance = function(v,c){
+	if((v instanceof c)) return v; else return null;
+}
 Std.string = function(s){
 	return js.Boot.__string_rec(s,"");
+}
+Std["int"] = function(x){
+	return x | 0;
+}
+Std.parseInt = function(x){
+	var v = parseInt(x,10);
+	if(v == 0 && (HxOverrides.cca(x,1) == 120 || HxOverrides.cca(x,1) == 88)) v = parseInt(x);
+	if(isNaN(v)) return null;
+	return v;
 }
 Std.parseFloat = function(x){
 	return parseFloat(x);
 }
+Std.random = function(x){
+	if(x <= 0) return 0; else return Math.floor(Math.random() * x);
+}
+var StringBuf = function(){
+	this.b = "";
+};
+$hxClasses["StringBuf"] = StringBuf;
+StringBuf.__name__ = ["StringBuf"];
+StringBuf.prototype = {
+	toString: function(){
+		return this.b;
+	}
+	,addSub: function(s,pos,len){
+		this.b += len == null?HxOverrides.substr(s,pos,null):HxOverrides.substr(s,pos,len);
+	}
+	,addChar: function(c){
+		this.b += String.fromCharCode(c);
+	}
+	,add: function(x){
+		this.b += Std.string(x);
+	}
+	,get_length: function(){
+		return this.b.length;
+	}
+	,b: null
+	,__class__: StringBuf
+	,__properties__: {get_length:"get_length"}
+}
 var StringTools = function() { }
 $hxClasses["StringTools"] = StringTools;
-StringTools.__name__ = true;
+StringTools.__name__ = ["StringTools"];
+StringTools.urlEncode = function(s){
+	return encodeURIComponent(s);
+}
+StringTools.urlDecode = function(s){
+	return decodeURIComponent(s.split("+").join(" "));
+}
+StringTools.htmlEscape = function(s,quotes){
+	s = s.split("&").join("&amp;").split("<").join("&lt;").split(">").join("&gt;");
+	if(quotes) return s.split("\"").join("&quot;").split("'").join("&#039;"); else return s;
+}
+StringTools.htmlUnescape = function(s){
+	return s.split("&gt;").join(">").split("&lt;").join("<").split("&quot;").join("\"").split("&#039;").join("'").split("&amp;").join("&");
+}
+StringTools.startsWith = function(s,start){
+	return s.length >= start.length && HxOverrides.substr(s,0,start.length) == start;
+}
+StringTools.endsWith = function(s,end){
+	var elen = end.length;
+	var slen = s.length;
+	return slen >= elen && HxOverrides.substr(s,slen - elen,elen) == end;
+}
+StringTools.isSpace = function(s,pos){
+	var c = HxOverrides.cca(s,pos);
+	return c > 8 && c < 14 || c == 32;
+}
+StringTools.ltrim = function(s){
+	var l = s.length;
+	var r = 0;
+	while(r < l && StringTools.isSpace(s,r)) r++;
+	if(r > 0) return HxOverrides.substr(s,r,l - r); else return s;
+}
+StringTools.rtrim = function(s){
+	var l = s.length;
+	var r = 0;
+	while(r < l && StringTools.isSpace(s,l - r - 1)) r++;
+	if(r > 0) return HxOverrides.substr(s,0,l - r); else return s;
+}
+StringTools.trim = function(s){
+	return StringTools.ltrim(StringTools.rtrim(s));
+}
+StringTools.lpad = function(s,c,l){
+	if(c.length <= 0) return s;
+	while(s.length < l) s = c + s;
+	return s;
+}
+StringTools.rpad = function(s,c,l){
+	if(c.length <= 0) return s;
+	while(s.length < l) s = s + c;
+	return s;
+}
 StringTools.replace = function(s,sub,by){
 	return s.split(sub).join(by);
 }
+StringTools.hex = function(n,digits){
+	var s = "";
+	var hexChars = "0123456789ABCDEF";
+	do {
+		s = hexChars.charAt(n & 15) + s;
+		n >>>= 4;
+	} while(n > 0);
+	if(digits != null) while(s.length < digits) s = "0" + s;
+	return s;
+}
+StringTools.fastCodeAt = function(s,index){
+	return s.charCodeAt(index);
+}
+StringTools.isEof = function(c){
+	return c != c;
+}
 var Test = function() { }
 $hxClasses["Test"] = Test;
-Test.__name__ = true;
+Test.__name__ = ["Test"];
 Test.test = function(x,v,vars){
-	console.log("Running " + x);
 	var p = new hscript.Parser();
 	var program = p.parseString(x);
 	var bytes = hscript.Bytes.encode(program);
@@ -86,7 +381,7 @@ Test.test = function(x,v,vars){
 Test.main = function(){
 	Test.test("0",0);
 	Test.test("0xFF",255);
-	Test.test("switch(29) {case all if(all < 64): 'goodbye'; default: 'hallo';}","goodbye");
+	Test.test("switch(29) {\r\n\t\t\tcase all if(all < 64):\r\n\t\t\t\t'goodbye';\r\n\t\t\tdefault: \r\n\t\t\t\t'hallo';\r\n\t\t}","goodbye");
 	Test.test("switch(5 * 5) {case 25: 1; default: 50;}",1);
 	Test.test("switch(5 * 5) {case 25 if(false): 1; default: 50;}",50);
 	Test.test("0xBFFFFFFF",-1073741825);
@@ -111,7 +406,6 @@ Test.main = function(){
 	Test.test("-1 + 2",1);
 	Test.test("1 / 5",0.2);
 	Test.test("3 * 2 + 5",11);
-	Test.test("[for(i in a) 2 * i][0]",2,{ a : [1,2,3]});
 	Test.test("3 * (2 + 5)",21);
 	Test.test("3 * 2 // + 5 \n + 6",12);
 	Test.test("3 /* 2\n */ + 5",8);
@@ -146,20 +440,69 @@ Test.main = function(){
 	Test.test("var i=2; if( true ) --i; i",1);
 	Test.test("var i=0; if( i++ > 0 ) i=3; i",1);
 	Test.test("var a = 5/2; a",2.5);
+	Test.test("[for(i in 1...4) i*2].join('-')","2-4-6");
 	Test.test("{ x = 3; x; }",3);
 	Test.test("{ x : 3, y : {} }.x",3);
 	Test.test("function bug(){ \n }\nbug().x",null);
 	Test.test("1 + 2 == 3",true);
 	Test.test("-2 == 3 - 5",true);
-	console.log("Done");
+	haxe.Log.trace("Done",{ fileName : "Test.hx", lineNumber : 96, className : "Test", methodName : "main"});
 }
+var ValueType = $hxClasses["ValueType"] = { __ename__ : ["ValueType"], __constructs__ : ["TNull","TInt","TFloat","TBool","TObject","TFunction","TClass","TEnum","TUnknown"] }
+ValueType.TNull = ["TNull",0];
+ValueType.TNull.toString = $estr;
+ValueType.TNull.__enum__ = ValueType;
+ValueType.TInt = ["TInt",1];
+ValueType.TInt.toString = $estr;
+ValueType.TInt.__enum__ = ValueType;
+ValueType.TFloat = ["TFloat",2];
+ValueType.TFloat.toString = $estr;
+ValueType.TFloat.__enum__ = ValueType;
+ValueType.TBool = ["TBool",3];
+ValueType.TBool.toString = $estr;
+ValueType.TBool.__enum__ = ValueType;
+ValueType.TObject = ["TObject",4];
+ValueType.TObject.toString = $estr;
+ValueType.TObject.__enum__ = ValueType;
+ValueType.TFunction = ["TFunction",5];
+ValueType.TFunction.toString = $estr;
+ValueType.TFunction.__enum__ = ValueType;
+ValueType.TClass = function(c) { var $x = ["TClass",6,c]; $x.__enum__ = ValueType; $x.toString = $estr; return $x; }
+ValueType.TEnum = function(e) { var $x = ["TEnum",7,e]; $x.__enum__ = ValueType; $x.toString = $estr; return $x; }
+ValueType.TUnknown = ["TUnknown",8];
+ValueType.TUnknown.toString = $estr;
+ValueType.TUnknown.__enum__ = ValueType;
 var Type = function() { }
 $hxClasses["Type"] = Type;
-Type.__name__ = true;
+Type.__name__ = ["Type"];
+Type.getClass = function(o){
+	if(o == null) return null;
+	return o.__class__;
+}
+Type.getEnum = function(o){
+	if(o == null) return null;
+	return o.__enum__;
+}
+Type.getSuperClass = function(c){
+	return c.__super__;
+}
+Type.getClassName = function(c){
+	var a = c.__name__;
+	return a.join(".");
+}
+Type.getEnumName = function(e){
+	var a = e.__ename__;
+	return a.join(".");
+}
 Type.resolveClass = function(name){
 	var cl = $hxClasses[name];
 	if(cl == null || !cl.__name__) return null;
 	return cl;
+}
+Type.resolveEnum = function(name){
+	var e = $hxClasses[name];
+	if(e == null || !e.__ename__) return null;
+	return e;
 }
 Type.createInstance = function(cl,args){
 	switch(args.length) {
@@ -186,6 +529,71 @@ Type.createInstance = function(cl,args){
 	}
 	return null;
 }
+Type.createEmptyInstance = function(cl){
+	function empty() {}; empty.prototype = cl.prototype;
+	return new empty();
+}
+Type.createEnum = function(e,constr,params){
+	var f = Reflect.field(e,constr);
+	if(f == null) throw "No such constructor " + constr;
+	if(Reflect.isFunction(f)) {
+		if(params == null) throw "Constructor " + constr + " need parameters";
+		return f.apply(e,params);
+	}
+	if(params != null && params.length != 0) throw "Constructor " + constr + " does not need parameters";
+	return f;
+}
+Type.createEnumIndex = function(e,index,params){
+	var c = e.__constructs__[index];
+	if(c == null) throw index + " is not a valid enum constructor index";
+	return Type.createEnum(e,c,params);
+}
+Type.getInstanceFields = function(c){
+	var a = [];
+	for(var i in c.prototype) a.push(i);
+	HxOverrides.remove(a,"__class__");
+	HxOverrides.remove(a,"__properties__");
+	return a;
+}
+Type.getClassFields = function(c){
+	var a = Reflect.fields(c);
+	HxOverrides.remove(a,"__name__");
+	HxOverrides.remove(a,"__interfaces__");
+	HxOverrides.remove(a,"__properties__");
+	HxOverrides.remove(a,"__super__");
+	HxOverrides.remove(a,"prototype");
+	return a;
+}
+Type.getEnumConstructs = function(e){
+	var a = e.__constructs__;
+	return a.slice();
+}
+Type["typeof"] = function(v){
+	var _g = typeof(v);
+	switch(_g) {
+	case "boolean":
+		return ValueType.TBool;
+	case "string":
+		return ValueType.TClass(String);
+	case "number":
+		if(Math.ceil(v) == v % 2147483648.0) return ValueType.TInt;
+		return ValueType.TFloat;
+	case "object":
+		if(v == null) return ValueType.TNull;
+		var e = v.__enum__;
+		if(e != null) return ValueType.TEnum(e);
+		var c = v.__class__;
+		if(c != null) return ValueType.TClass(c);
+		return ValueType.TObject;
+	case "function":
+		if(v.__name__ || v.__ename__) return ValueType.TObject;
+		return ValueType.TFunction;
+	case "undefined":
+		return ValueType.TNull;
+	default:
+		return ValueType.TUnknown;
+	}
+}
 Type.enumEq = function(a,b){
 	if(a == b) return true;
 	try {
@@ -203,47 +611,515 @@ Type.enumEq = function(a,b){
 	}
 	return true;
 }
+Type.enumConstructor = function(e){
+	return e[0];
+}
+Type.enumParameters = function(e){
+	return e.slice(2);
+}
+Type.enumIndex = function(e){
+	return e[1];
+}
+Type.allEnums = function(e){
+	var all = [];
+	var cst = e.__constructs__;
+	var _g = 0;
+	while(_g < cst.length) {
+		var c = cst[_g];
+		++_g;
+		var v = Reflect.field(e,c);
+		if(!Reflect.isFunction(v)) all.push(v);
+	}
+	return all;
+}
 var haxe = {}
+haxe._EnumFlags = {}
+haxe._EnumFlags.EnumFlags_Impl_ = function() { }
+$hxClasses["haxe._EnumFlags.EnumFlags_Impl_"] = haxe._EnumFlags.EnumFlags_Impl_;
+haxe._EnumFlags.EnumFlags_Impl_.__name__ = ["haxe","_EnumFlags","EnumFlags_Impl_"];
+haxe._EnumFlags.EnumFlags_Impl_._new = function(i){
+	if(i == null) i = 0;
+	return i;
+}
+haxe._EnumFlags.EnumFlags_Impl_.has = function(this1,v){
+	return (this1 & 1 << v[1]) != 0;
+}
+haxe._EnumFlags.EnumFlags_Impl_.set = function(this1,v){
+	this1 |= 1 << v[1];
+}
+haxe._EnumFlags.EnumFlags_Impl_.unset = function(this1,v){
+	this1 &= 268435455 - (1 << v[1]);
+}
+haxe._EnumFlags.EnumFlags_Impl_.ofInt = function(i){
+	return i;
+}
+haxe._EnumFlags.EnumFlags_Impl_.toInt = function(this1){
+	return this1;
+}
+haxe.Log = function() { }
+$hxClasses["haxe.Log"] = haxe.Log;
+haxe.Log.__name__ = ["haxe","Log"];
+haxe.Log.trace = function(v,infos){
+	js.Boot.__trace(v,infos);
+}
+haxe.Log.clear = function(){
+	js.Boot.__clear_trace();
+}
 haxe.ds = {}
+haxe.ds.BalancedTree = function(){
+};
+$hxClasses["haxe.ds.BalancedTree"] = haxe.ds.BalancedTree;
+haxe.ds.BalancedTree.__name__ = ["haxe","ds","BalancedTree"];
+haxe.ds.BalancedTree.prototype = {
+	toString: function(){
+		return "{" + this.root.toString() + "}";
+	}
+	,compare: function(k1,k2){
+		return Reflect.compare(k1,k2);
+	}
+	,balance: function(l,k,v,r){
+		var hl;
+		if(l == null) hl = 0; else hl = l._height;
+		var hr;
+		if(r == null) hr = 0; else hr = r._height;
+		if(hl > hr + 2) {
+			if((function($this) {
+				var $r;
+				var _this = l.left;
+				$r = _this == null?0:_this._height;
+				return $r;
+			}(this)) >= (function($this) {
+				var $r;
+				var _this = l.right;
+				$r = _this == null?0:_this._height;
+				return $r;
+			}(this))) return new haxe.ds.TreeNode(l.left,l.key,l.value,new haxe.ds.TreeNode(l.right,k,v,r)); else return new haxe.ds.TreeNode(new haxe.ds.TreeNode(l.left,l.key,l.value,l.right.left),l.right.key,l.right.value,new haxe.ds.TreeNode(l.right.right,k,v,r));
+		} else if(hr > hl + 2) {
+			if((function($this) {
+				var $r;
+				var _this = r.right;
+				$r = _this == null?0:_this._height;
+				return $r;
+			}(this)) > (function($this) {
+				var $r;
+				var _this = r.left;
+				$r = _this == null?0:_this._height;
+				return $r;
+			}(this))) return new haxe.ds.TreeNode(new haxe.ds.TreeNode(l,k,v,r.left),r.key,r.value,r.right); else return new haxe.ds.TreeNode(new haxe.ds.TreeNode(l,k,v,r.left.left),r.left.key,r.left.value,new haxe.ds.TreeNode(r.left.right,r.key,r.value,r.right));
+		} else return new haxe.ds.TreeNode(l,k,v,r,(hl > hr?hl:hr) + 1);
+	}
+	,removeMinBinding: function(t){
+		if(t.left == null) return t.right; else return this.balance(this.removeMinBinding(t.left),t.key,t.value,t.right);
+	}
+	,minBinding: function(t){
+		if(t == null) throw "Not_found"; else if(t.left == null) return t; else return this.minBinding(t.left);
+	}
+	,merge: function(t1,t2){
+		if(t1 == null) return t2;
+		if(t2 == null) return t1;
+		var t = this.minBinding(t2);
+		return this.balance(t1,t.key,t.value,this.removeMinBinding(t2));
+	}
+	,keysLoop: function(node,acc){
+		if(node != null) {
+			this.keysLoop(node.left,acc);
+			acc.push(node.key);
+			this.keysLoop(node.right,acc);
+		}
+	}
+	,iteratorLoop: function(node,acc){
+		if(node != null) {
+			this.iteratorLoop(node.left,acc);
+			acc.push(node.value);
+			this.iteratorLoop(node.right,acc);
+		}
+	}
+	,removeLoop: function(k,node){
+		if(node == null) throw "Not_found";
+		var c = this.compare(k,node.key);
+		if(c == 0) return this.merge(node.left,node.right); else if(c < 0) return this.balance(this.removeLoop(k,node.left),node.key,node.value,node.right); else return this.balance(node.left,node.key,node.value,this.removeLoop(k,node.right));
+	}
+	,setLoop: function(k,v,node){
+		if(node == null) return new haxe.ds.TreeNode(null,k,v,null);
+		var c = this.compare(k,node.key);
+		if(c == 0) return new haxe.ds.TreeNode(node.left,k,v,node.right,node == null?0:node._height); else if(c < 0) {
+			var nl = this.setLoop(k,v,node.left);
+			return this.balance(nl,node.key,node.value,node.right);
+		} else {
+			var nr = this.setLoop(k,v,node.right);
+			return this.balance(node.left,node.key,node.value,nr);
+		}
+	}
+	,keys: function(){
+		var ret = [];
+		this.keysLoop(this.root,ret);
+		return HxOverrides.iter(ret);
+	}
+	,iterator: function(){
+		var ret = [];
+		this.iteratorLoop(this.root,ret);
+		return HxOverrides.iter(ret);
+	}
+	,exists: function(key){
+		var node = this.root;
+		while(node != null) {
+			var c = this.compare(key,node.key);
+			if(c == 0) return true; else if(c < 0) node = node.left; else node = node.right;
+		}
+		return false;
+	}
+	,remove: function(key){
+		try {
+			this.root = this.removeLoop(key,this.root);
+			return true;
+		} catch( e ) {
+			if( js.Boot.__instanceof(e,String) ) {
+				return false;
+			} else throw(e);
+		}
+	}
+	,get: function(key){
+		var node = this.root;
+		while(node != null) {
+			var c = this.compare(key,node.key);
+			if(c == 0) return node.value;
+			if(c < 0) node = node.left; else node = node.right;
+		}
+		return null;
+	}
+	,set: function(key,value){
+		this.root = this.setLoop(key,value,this.root);
+	}
+	,root: null
+	,__class__: haxe.ds.BalancedTree
+}
+haxe.ds.TreeNode = function(l,k,v,r,h){
+	if(h == null) h = -1;
+	this.left = l;
+	this.key = k;
+	this.value = v;
+	this.right = r;
+	if(h == -1) this._height = ((function($this) {
+		var $r;
+		var _this = $this.left;
+		$r = _this == null?0:_this._height;
+		return $r;
+	}(this)) > (function($this) {
+		var $r;
+		var _this = $this.right;
+		$r = _this == null?0:_this._height;
+		return $r;
+	}(this))?(function($this) {
+		var $r;
+		var _this = $this.left;
+		$r = _this == null?0:_this._height;
+		return $r;
+	}(this)):(function($this) {
+		var $r;
+		var _this = $this.right;
+		$r = _this == null?0:_this._height;
+		return $r;
+	}(this))) + 1; else this._height = h;
+};
+$hxClasses["haxe.ds.TreeNode"] = haxe.ds.TreeNode;
+haxe.ds.TreeNode.__name__ = ["haxe","ds","TreeNode"];
+haxe.ds.TreeNode.prototype = {
+	toString: function(){
+		return (this.left == null?"":this.left.toString() + ", ") + ("" + Std.string(this.key) + "=" + Std.string(this.value)) + (this.right == null?"":", " + this.right.toString());
+	}
+	,_height: null
+	,value: null
+	,key: null
+	,right: null
+	,left: null
+	,__class__: haxe.ds.TreeNode
+}
+haxe.ds.EnumValueMap = function(){
+	haxe.ds.BalancedTree.call(this);
+};
+$hxClasses["haxe.ds.EnumValueMap"] = haxe.ds.EnumValueMap;
+haxe.ds.EnumValueMap.__name__ = ["haxe","ds","EnumValueMap"];
+haxe.ds.EnumValueMap.__interfaces__ = [IMap];
+haxe.ds.EnumValueMap.__super__ = haxe.ds.BalancedTree;
+haxe.ds.EnumValueMap.prototype = $extend(haxe.ds.BalancedTree.prototype,{
+	compareArgs: function(a1,a2){
+		var ld = a1.length - a2.length;
+		if(ld != 0) return ld;
+		var _g1 = 0;
+		var _g = a1.length;
+		while(_g1 < _g) {
+			var i = _g1++;
+			var v1 = a1[i];
+			var v2 = a2[i];
+			var d;
+			if(Reflect.isEnumValue(v1) && Reflect.isEnumValue(v2)) d = this.compare(v1,v2); else d = Reflect.compare(v1,v2);
+			if(d != 0) return d;
+		}
+		return 0;
+	}
+	,compare: function(k1,k2){
+		var d = k1[1] - k2[1];
+		if(d != 0) return d;
+		var p1 = k1.slice(2);
+		var p2 = k2.slice(2);
+		if(p1.length == 0 && p2.length == 0) return 0;
+		return this.compareArgs(p1,p2);
+	}
+	,__class__: haxe.ds.EnumValueMap
+});
 haxe.ds.GenericCell = function(elt,next){
 	this.elt = elt;
 	this.next = next;
 };
 $hxClasses["haxe.ds.GenericCell"] = haxe.ds.GenericCell;
-haxe.ds.GenericCell.__name__ = true;
+haxe.ds.GenericCell.__name__ = ["haxe","ds","GenericCell"];
 haxe.ds.GenericCell.prototype = {
-	__class__: haxe.ds.GenericCell
+	next: null
+	,elt: null
+	,__class__: haxe.ds.GenericCell
 }
 haxe.ds.GenericStack = function(){
 };
 $hxClasses["haxe.ds.GenericStack"] = haxe.ds.GenericStack;
-haxe.ds.GenericStack.__name__ = true;
+haxe.ds.GenericStack.__name__ = ["haxe","ds","GenericStack"];
 haxe.ds.GenericStack.prototype = {
-	pop: function(){
+	toString: function(){
+		var a = new Array();
+		var l = this.head;
+		while(l != null) {
+			a.push(l.elt);
+			l = l.next;
+		}
+		return "{" + a.join(",") + "}";
+	}
+	,iterator: function(){
+		var l = this.head;
+		return { hasNext : function(){
+			return l != null;
+		}, next : function(){
+			var k = l;
+			l = k.next;
+			return k.elt;
+		}};
+	}
+	,remove: function(v){
+		var prev = null;
+		var l = this.head;
+		while(l != null) {
+			if(l.elt == v) {
+				if(prev == null) this.head = l.next; else prev.next = l.next;
+				break;
+			}
+			prev = l;
+			l = l.next;
+		}
+		return l != null;
+	}
+	,isEmpty: function(){
+		return this.head == null;
+	}
+	,pop: function(){
 		var k = this.head;
 		if(k == null) return null; else {
 			this.head = k.next;
 			return k.elt;
 		}
 	}
+	,first: function(){
+		if(this.head == null) return null; else return this.head.elt;
+	}
 	,add: function(item){
 		this.head = new haxe.ds.GenericCell(item,this.head);
 	}
+	,head: null
 	,__class__: haxe.ds.GenericStack
+}
+haxe.ds._HashMap = {}
+haxe.ds._HashMap.HashMap_Impl_ = function() { }
+$hxClasses["haxe.ds._HashMap.HashMap_Impl_"] = haxe.ds._HashMap.HashMap_Impl_;
+haxe.ds._HashMap.HashMap_Impl_.__name__ = ["haxe","ds","_HashMap","HashMap_Impl_"];
+haxe.ds._HashMap.HashMap_Impl_._new = function(){
+	return { keys : new haxe.ds.IntMap(), values : new haxe.ds.IntMap()};
+}
+haxe.ds._HashMap.HashMap_Impl_.set = function(this1,k,v){
+	this1.keys.set(k.hashCode(),k);
+	this1.values.set(k.hashCode(),v);
+}
+haxe.ds._HashMap.HashMap_Impl_.get = function(this1,k){
+	return this1.values.get(k.hashCode());
+}
+haxe.ds._HashMap.HashMap_Impl_.exists = function(this1,k){
+	return this1.values.exists(k.hashCode());
+}
+haxe.ds._HashMap.HashMap_Impl_.remove = function(this1,k){
+	this1.values.remove(k.hashCode());
+	return this1.keys.remove(k.hashCode());
+}
+haxe.ds._HashMap.HashMap_Impl_.keys = function(this1){
+	return this1.keys.iterator();
+}
+haxe.ds._HashMap.HashMap_Impl_.iterator = function(this1){
+	return this1.values.iterator();
+}
+haxe.ds.IntMap = function(){
+	this.h = { };
+};
+$hxClasses["haxe.ds.IntMap"] = haxe.ds.IntMap;
+haxe.ds.IntMap.__name__ = ["haxe","ds","IntMap"];
+haxe.ds.IntMap.__interfaces__ = [IMap];
+haxe.ds.IntMap.prototype = {
+	toString: function(){
+		var s = new StringBuf();
+		s.b += "{";
+		var it = this.keys();
+		while( it.hasNext() ) {
+			var i = it.next();
+			s.b += Std.string(i);
+			s.b += " => ";
+			s.b += Std.string(Std.string(this.get(i)));
+			if(it.hasNext()) s.b += ", ";
+		}
+		s.b += "}";
+		return s.b;
+	}
+	,iterator: function(){
+		return { ref : this.h, it : this.keys(), hasNext : function(){
+			return this.it.hasNext();
+		}, next : function(){
+			var i = this.it.next();
+			return this.ref[i];
+		}};
+	}
+	,keys: function(){
+		var a = [];
+		for( var key in this.h ) {
+		if(this.h.hasOwnProperty(key)) a.push(key | 0);
+		}
+		return HxOverrides.iter(a);
+	}
+	,remove: function(key){
+		if(!this.h.hasOwnProperty(key)) return false;
+		delete(this.h[key]);
+		return true;
+	}
+	,exists: function(key){
+		return this.h.hasOwnProperty(key);
+	}
+	,get: function(key){
+		return this.h[key];
+	}
+	,set: function(key,value){
+		this.h[key] = value;
+	}
+	,h: null
+	,__class__: haxe.ds.IntMap
+}
+haxe.ds.ObjectMap = function(){
+	this.h = { };
+	this.h.__keys__ = { };
+};
+$hxClasses["haxe.ds.ObjectMap"] = haxe.ds.ObjectMap;
+haxe.ds.ObjectMap.__name__ = ["haxe","ds","ObjectMap"];
+haxe.ds.ObjectMap.__interfaces__ = [IMap];
+haxe.ds.ObjectMap.assignId = function(obj){
+	return obj.__id__ = ++haxe.ds.ObjectMap.count;
+}
+haxe.ds.ObjectMap.getId = function(obj){
+	return obj.__id__;
+}
+haxe.ds.ObjectMap.prototype = {
+	keys: function(){
+		var a = [];
+		for( var key in this.h.__keys__ ) {
+		if(this.h.hasOwnProperty(key)) a.push(this.h.__keys__[key]);
+		}
+		return HxOverrides.iter(a);
+	}
+	,remove: function(key){
+		var id = key.__id__;
+		if(!this.h.hasOwnProperty(id)) return false;
+		delete(this.h[id]);
+		delete(this.h.__keys__[id]);
+		return true;
+	}
+	,exists: function(key){
+		return this.h.hasOwnProperty(key.__id__);
+	}
+	,get: function(key){
+		return this.h[key.__id__];
+	}
+	,set: function(key,value){
+		var id;
+		if(key.__id__ != null) id = key.__id__; else id = key.__id__ = ++haxe.ds.ObjectMap.count;
+		this.h[id] = value;
+		this.h.__keys__[id] = key;
+	}
+	,h: null
+	,toString: function(){
+		var s = new StringBuf();
+		s.b += "{";
+		var it = this.keys();
+		while( it.hasNext() ) {
+			var i = it.next();
+			s.b += Std.string(Std.string(i));
+			s.b += " => ";
+			s.b += Std.string(Std.string(this.h[i.__id__]));
+			if(it.hasNext()) s.b += ", ";
+		}
+		s.b += "}";
+		return s.b;
+	}
+	,iterator: function(){
+		return { ref : this.h, it : this.keys(), hasNext : function(){
+			return this.it.hasNext();
+		}, next : function(){
+			var i = this.it.next();
+			return this.ref[i.__id__];
+		}};
+	}
+	,__class__: haxe.ds.ObjectMap
 }
 haxe.ds.StringMap = function(){
 	this.h = { };
 };
 $hxClasses["haxe.ds.StringMap"] = haxe.ds.StringMap;
-haxe.ds.StringMap.__name__ = true;
+haxe.ds.StringMap.__name__ = ["haxe","ds","StringMap"];
 haxe.ds.StringMap.__interfaces__ = [IMap];
 haxe.ds.StringMap.prototype = {
-	keys: function(){
+	toString: function(){
+		var s = new StringBuf();
+		s.b += "{";
+		var it = this.keys();
+		while( it.hasNext() ) {
+			var i = it.next();
+			s.b += Std.string(i);
+			s.b += " => ";
+			s.b += Std.string(Std.string(this.get(i)));
+			if(it.hasNext()) s.b += ", ";
+		}
+		s.b += "}";
+		return s.b;
+	}
+	,iterator: function(){
+		return { ref : this.h, it : this.keys(), hasNext : function(){
+			return this.it.hasNext();
+		}, next : function(){
+			var i = this.it.next();
+			return this.ref["$" + i];
+		}};
+	}
+	,keys: function(){
 		var a = [];
 		for( var key in this.h ) {
 		if(this.h.hasOwnProperty(key)) a.push(key.substr(1));
 		}
 		return HxOverrides.iter(a);
+	}
+	,remove: function(key){
+		key = "$" + key;
+		if(!this.h.hasOwnProperty(key)) return false;
+		delete(this.h[key]);
+		return true;
 	}
 	,exists: function(key){
 		return this.h.hasOwnProperty("$" + key);
@@ -254,7 +1130,37 @@ haxe.ds.StringMap.prototype = {
 	,set: function(key,value){
 		this.h["$" + key] = value;
 	}
+	,h: null
 	,__class__: haxe.ds.StringMap
+}
+haxe.ds.WeakMap = function(){
+	throw "Not implemented for this platform";
+};
+$hxClasses["haxe.ds.WeakMap"] = haxe.ds.WeakMap;
+haxe.ds.WeakMap.__name__ = ["haxe","ds","WeakMap"];
+haxe.ds.WeakMap.__interfaces__ = [IMap];
+haxe.ds.WeakMap.prototype = {
+	toString: function(){
+		return null;
+	}
+	,iterator: function(){
+		return null;
+	}
+	,keys: function(){
+		return null;
+	}
+	,remove: function(key){
+		return false;
+	}
+	,exists: function(key){
+		return false;
+	}
+	,get: function(key){
+		return null;
+	}
+	,set: function(key,value){
+	}
+	,__class__: haxe.ds.WeakMap
 }
 haxe.io = {}
 haxe.io.Bytes = function(length,b){
@@ -262,7 +1168,7 @@ haxe.io.Bytes = function(length,b){
 	this.b = b;
 };
 $hxClasses["haxe.io.Bytes"] = haxe.io.Bytes;
-haxe.io.Bytes.__name__ = true;
+haxe.io.Bytes.__name__ = ["haxe","io","Bytes"];
 haxe.io.Bytes.alloc = function(length){
 	var a = new Array();
 	var _g = 0;
@@ -295,8 +1201,37 @@ haxe.io.Bytes.ofString = function(s){
 	}
 	return new haxe.io.Bytes(a.length,a);
 }
+haxe.io.Bytes.ofData = function(b){
+	return new haxe.io.Bytes(b.length,b);
+}
+haxe.io.Bytes.fastGet = function(b,pos){
+	return b[pos];
+}
 haxe.io.Bytes.prototype = {
-	toString: function(){
+	getData: function(){
+		return this.b;
+	}
+	,toHex: function(){
+		var s = new StringBuf();
+		var chars = [];
+		var str = "0123456789abcdef";
+		var _g1 = 0;
+		var _g = str.length;
+		while(_g1 < _g) {
+			var i = _g1++;
+			chars.push(HxOverrides.cca(str,i));
+		}
+		var _g1 = 0;
+		var _g = this.length;
+		while(_g1 < _g) {
+			var i = _g1++;
+			var c = this.b[i];
+			s.b += String.fromCharCode(chars[c >> 4]);
+			s.b += String.fromCharCode(chars[c & 15]);
+		}
+		return s.b;
+	}
+	,toString: function(){
 		return this.readString(0,this.length);
 	}
 	,readString: function(pos,len){
@@ -322,18 +1257,71 @@ haxe.io.Bytes.prototype = {
 		}
 		return s;
 	}
+	,compare: function(other){
+		var b1 = this.b;
+		var b2 = other.b;
+		var len;
+		if(this.length < other.length) len = this.length; else len = other.length;
+		var _g = 0;
+		while(_g < len) {
+			var i = _g++;
+			if(b1[i] != b2[i]) return b1[i] - b2[i];
+		}
+		return this.length - other.length;
+	}
+	,sub: function(pos,len){
+		if(pos < 0 || len < 0 || pos + len > this.length) throw haxe.io.Error.OutsideBounds;
+		return new haxe.io.Bytes(len,this.b.slice(pos,pos + len));
+	}
+	,blit: function(pos,src,srcpos,len){
+		if(pos < 0 || srcpos < 0 || len < 0 || pos + len > this.length || srcpos + len > src.length) throw haxe.io.Error.OutsideBounds;
+		var b1 = this.b;
+		var b2 = src.b;
+		if(b1 == b2 && pos > srcpos) {
+			var i = len;
+			while(i > 0) {
+				i--;
+				b1[i + pos] = b2[i + srcpos];
+			}
+			return;
+		}
+		var _g = 0;
+		while(_g < len) {
+			var i = _g++;
+			b1[i + pos] = b2[i + srcpos];
+		}
+	}
+	,set: function(pos,v){
+		this.b[pos] = v & 255;
+	}
+	,get: function(pos){
+		return this.b[pos];
+	}
+	,b: null
+	,length: null
 	,__class__: haxe.io.Bytes
 }
 haxe.io.BytesBuffer = function(){
 	this.b = new Array();
 };
 $hxClasses["haxe.io.BytesBuffer"] = haxe.io.BytesBuffer;
-haxe.io.BytesBuffer.__name__ = true;
+haxe.io.BytesBuffer.__name__ = ["haxe","io","BytesBuffer"];
 haxe.io.BytesBuffer.prototype = {
 	getBytes: function(){
 		var bytes = new haxe.io.Bytes(this.b.length,this.b);
 		this.b = null;
 		return bytes;
+	}
+	,addBytes: function(src,pos,len){
+		if(pos < 0 || len < 0 || pos + len > src.length) throw haxe.io.Error.OutsideBounds;
+		var b1 = this.b;
+		var b2 = src.b;
+		var _g1 = pos;
+		var _g = pos + len;
+		while(_g1 < _g) {
+			var i = _g1++;
+			this.b.push(b2[i]);
+		}
 	}
 	,add: function(src){
 		var b1 = this.b;
@@ -345,16 +1333,130 @@ haxe.io.BytesBuffer.prototype = {
 			this.b.push(b2[i]);
 		}
 	}
+	,addByte: function(byte){
+		this.b.push($byte);
+	}
+	,get_length: function(){
+		return this.b.length;
+	}
+	,b: null
 	,__class__: haxe.io.BytesBuffer
+	,__properties__: {get_length:"get_length"}
 }
 haxe.io.Input = function() { }
 $hxClasses["haxe.io.Input"] = haxe.io.Input;
-haxe.io.Input.__name__ = true;
+haxe.io.Input.__name__ = ["haxe","io","Input"];
 haxe.io.Input.prototype = {
-	readString: function(len){
+	getDoubleSig: function(bytes){
+		return ((bytes[1] & 15) << 16 | bytes[2] << 8 | bytes[3]) * 4294967296. + (bytes[4] >> 7) * 2147483648 + ((bytes[4] & 127) << 24 | bytes[5] << 16 | bytes[6] << 8 | bytes[7]);
+	}
+	,readString: function(len){
 		var b = haxe.io.Bytes.alloc(len);
 		this.readFullBytes(b,0,len);
 		return b.toString();
+	}
+	,readInt32: function(){
+		var ch1 = this.readByte();
+		var ch2 = this.readByte();
+		var ch3 = this.readByte();
+		var ch4 = this.readByte();
+		if(this.bigEndian) return ch4 | ch3 << 8 | ch2 << 16 | ch1 << 24; else return ch1 | ch2 << 8 | ch3 << 16 | ch4 << 24;
+	}
+	,readUInt24: function(){
+		var ch1 = this.readByte();
+		var ch2 = this.readByte();
+		var ch3 = this.readByte();
+		if(this.bigEndian) return ch3 | ch2 << 8 | ch1 << 16; else return ch1 | ch2 << 8 | ch3 << 16;
+	}
+	,readInt24: function(){
+		var ch1 = this.readByte();
+		var ch2 = this.readByte();
+		var ch3 = this.readByte();
+		var n;
+		if(this.bigEndian) n = ch3 | ch2 << 8 | ch1 << 16; else n = ch1 | ch2 << 8 | ch3 << 16;
+		if((n & 8388608) != 0) return n - 16777216;
+		return n;
+	}
+	,readUInt16: function(){
+		var ch1 = this.readByte();
+		var ch2 = this.readByte();
+		if(this.bigEndian) return ch2 | ch1 << 8; else return ch1 | ch2 << 8;
+	}
+	,readInt16: function(){
+		var ch1 = this.readByte();
+		var ch2 = this.readByte();
+		var n;
+		if(this.bigEndian) n = ch2 | ch1 << 8; else n = ch1 | ch2 << 8;
+		if((n & 32768) != 0) return n - 65536;
+		return n;
+	}
+	,readInt8: function(){
+		var n = this.readByte();
+		if(n >= 128) return n - 256;
+		return n;
+	}
+	,readDouble: function(){
+		var bytes = [];
+		bytes.push(this.readByte());
+		bytes.push(this.readByte());
+		bytes.push(this.readByte());
+		bytes.push(this.readByte());
+		bytes.push(this.readByte());
+		bytes.push(this.readByte());
+		bytes.push(this.readByte());
+		bytes.push(this.readByte());
+		if(this.bigEndian) bytes.reverse();
+		var sign = 1 - (bytes[0] >> 7 << 1);
+		var exp = (bytes[0] << 4 & 2047 | bytes[1] >> 4) - 1023;
+		var sig = this.getDoubleSig(bytes);
+		if(sig == 0 && exp == -1023) return 0.0;
+		return sign * (1.0 + Math.pow(2,-52) * sig) * Math.pow(2,exp);
+	}
+	,readFloat: function(){
+		var bytes = [];
+		bytes.push(this.readByte());
+		bytes.push(this.readByte());
+		bytes.push(this.readByte());
+		bytes.push(this.readByte());
+		if(this.bigEndian) bytes.reverse();
+		var sign = 1 - (bytes[0] >> 7 << 1);
+		var exp = (bytes[0] << 1 & 255 | bytes[1] >> 7) - 127;
+		var sig = (bytes[1] & 127) << 16 | bytes[2] << 8 | bytes[3];
+		if(sig == 0 && exp == -127) return 0.0;
+		return sign * (1 + Math.pow(2,-23) * sig) * Math.pow(2,exp);
+	}
+	,readLine: function(){
+		var buf = new StringBuf();
+		var last;
+		var s;
+		try {
+			while((last = this.readByte()) != 10) buf.b += String.fromCharCode(last);
+			s = buf.b;
+			if(HxOverrides.cca(s,s.length - 1) == 13) s = HxOverrides.substr(s,0,-1);
+		} catch( e ) {
+			if( js.Boot.__instanceof(e,haxe.io.Eof) ) {
+				s = buf.b;
+				if(s.length == 0) throw e;
+			} else throw(e);
+		}
+		return s;
+	}
+	,readUntil: function(end){
+		var buf = new StringBuf();
+		var last;
+		while((last = this.readByte()) != end) buf.b += String.fromCharCode(last);
+		return buf.b;
+	}
+	,read: function(nbytes){
+		var s = haxe.io.Bytes.alloc(nbytes);
+		var p = 0;
+		while(nbytes > 0) {
+			var k = this.readBytes(s,p,nbytes);
+			if(k == 0) throw haxe.io.Error.Blocked;
+			p += k;
+			nbytes -= k;
+		}
+		return s;
 	}
 	,readFullBytes: function(s,pos,len){
 		while(len > 0) {
@@ -362,6 +1464,28 @@ haxe.io.Input.prototype = {
 			pos += k;
 			len -= k;
 		}
+	}
+	,readAll: function(bufsize){
+		if(bufsize == null) bufsize = 16384;
+		var buf = haxe.io.Bytes.alloc(bufsize);
+		var total = new haxe.io.BytesBuffer();
+		try {
+			while(true) {
+				var len = this.readBytes(buf,0,bufsize);
+				if(len == 0) throw haxe.io.Error.Blocked;
+				total.addBytes(buf,0,len);
+			}
+		} catch( e ) {
+			if( js.Boot.__instanceof(e,haxe.io.Eof) ) {
+			} else throw(e);
+		}
+		return total.getBytes();
+	}
+	,set_bigEndian: function(b){
+		this.bigEndian = b;
+		return b;
+	}
+	,close: function(){
 	}
 	,readBytes: function(s,pos,len){
 		var k = len;
@@ -377,7 +1501,9 @@ haxe.io.Input.prototype = {
 	,readByte: function(){
 		throw "Not implemented";
 	}
+	,bigEndian: null
 	,__class__: haxe.io.Input
+	,__properties__: {set_bigEndian:"set_bigEndian"}
 }
 haxe.io.BytesInput = function(b,pos,len){
 	if(pos == null) pos = 0;
@@ -389,7 +1515,7 @@ haxe.io.BytesInput = function(b,pos,len){
 	this.totlen = len;
 };
 $hxClasses["haxe.io.BytesInput"] = haxe.io.BytesInput;
-haxe.io.BytesInput.__name__ = true;
+haxe.io.BytesInput.__name__ = ["haxe","io","BytesInput"];
 haxe.io.BytesInput.__super__ = haxe.io.Input;
 haxe.io.BytesInput.prototype = $extend(haxe.io.Input.prototype,{
 	readBytes: function(buf,pos,len){
@@ -412,37 +1538,249 @@ haxe.io.BytesInput.prototype = $extend(haxe.io.Input.prototype,{
 		this.len--;
 		return this.b[this.pos++];
 	}
+	,set_position: function(p){
+		return this.pos = p;
+	}
+	,get_length: function(){
+		return this.totlen;
+	}
+	,get_position: function(){
+		return this.pos;
+	}
+	,totlen: null
+	,len: null
+	,pos: null
+	,b: null
 	,__class__: haxe.io.BytesInput
+	,__properties__: $extend(haxe.io.Input.prototype.__properties__,{set_position:"set_position",get_position:"get_position",get_length:"get_length"})
 });
 haxe.io.Output = function() { }
 $hxClasses["haxe.io.Output"] = haxe.io.Output;
-haxe.io.Output.__name__ = true;
+haxe.io.Output.__name__ = ["haxe","io","Output"];
+haxe.io.Output.prototype = {
+	writeString: function(s){
+		var b = haxe.io.Bytes.ofString(s);
+		this.writeFullBytes(b,0,b.length);
+	}
+	,writeInput: function(i,bufsize){
+		if(bufsize == null) bufsize = 4096;
+		var buf = haxe.io.Bytes.alloc(bufsize);
+		try {
+			while(true) {
+				var len = i.readBytes(buf,0,bufsize);
+				if(len == 0) throw haxe.io.Error.Blocked;
+				var p = 0;
+				while(len > 0) {
+					var k = this.writeBytes(buf,p,len);
+					if(k == 0) throw haxe.io.Error.Blocked;
+					p += k;
+					len -= k;
+				}
+			}
+		} catch( e ) {
+			if( js.Boot.__instanceof(e,haxe.io.Eof) ) {
+			} else throw(e);
+		}
+	}
+	,prepare: function(nbytes){
+	}
+	,writeInt32: function(x){
+		if(this.bigEndian) {
+			this.writeByte(x >>> 24);
+			this.writeByte(x >> 16 & 255);
+			this.writeByte(x >> 8 & 255);
+			this.writeByte(x & 255);
+		} else {
+			this.writeByte(x & 255);
+			this.writeByte(x >> 8 & 255);
+			this.writeByte(x >> 16 & 255);
+			this.writeByte(x >>> 24);
+		}
+	}
+	,writeUInt24: function(x){
+		if(x < 0 || x >= 16777216) throw haxe.io.Error.Overflow;
+		if(this.bigEndian) {
+			this.writeByte(x >> 16);
+			this.writeByte(x >> 8 & 255);
+			this.writeByte(x & 255);
+		} else {
+			this.writeByte(x & 255);
+			this.writeByte(x >> 8 & 255);
+			this.writeByte(x >> 16);
+		}
+	}
+	,writeInt24: function(x){
+		if(x < -8388608 || x >= 8388608) throw haxe.io.Error.Overflow;
+		this.writeUInt24(x & 16777215);
+	}
+	,writeUInt16: function(x){
+		if(x < 0 || x >= 65536) throw haxe.io.Error.Overflow;
+		if(this.bigEndian) {
+			this.writeByte(x >> 8);
+			this.writeByte(x & 255);
+		} else {
+			this.writeByte(x & 255);
+			this.writeByte(x >> 8);
+		}
+	}
+	,writeInt16: function(x){
+		if(x < -32768 || x >= 32768) throw haxe.io.Error.Overflow;
+		this.writeUInt16(x & 65535);
+	}
+	,writeInt8: function(x){
+		if(x < -128 || x >= 128) throw haxe.io.Error.Overflow;
+		this.writeByte(x & 255);
+	}
+	,writeDouble: function(x){
+		if(x == 0.0) {
+			this.writeByte(0);
+			this.writeByte(0);
+			this.writeByte(0);
+			this.writeByte(0);
+			this.writeByte(0);
+			this.writeByte(0);
+			this.writeByte(0);
+			this.writeByte(0);
+			return;
+		}
+		var exp = Math.floor(Math.log(Math.abs(x)) / haxe.io.Output.LN2);
+		var sig = Math.floor(Math.abs(x) / Math.pow(2,exp) * Math.pow(2,52));
+		var sig_h = sig & 34359738367;
+		var sig_l = Math.floor(sig / Math.pow(2,32));
+		var b1;
+		b1 = exp + 1023 >> 4 | (exp > 0?x < 0?128:64:x < 0?128:0);
+		var b2 = exp + 1023 << 4 & 255 | sig_l >> 16 & 15;
+		var b3 = sig_l >> 8 & 255;
+		var b4 = sig_l & 255;
+		var b5 = sig_h >> 24 & 255;
+		var b6 = sig_h >> 16 & 255;
+		var b7 = sig_h >> 8 & 255;
+		var b8 = sig_h & 255;
+		if(this.bigEndian) {
+			this.writeByte(b8);
+			this.writeByte(b7);
+			this.writeByte(b6);
+			this.writeByte(b5);
+			this.writeByte(b4);
+			this.writeByte(b3);
+			this.writeByte(b2);
+			this.writeByte(b1);
+		} else {
+			this.writeByte(b1);
+			this.writeByte(b2);
+			this.writeByte(b3);
+			this.writeByte(b4);
+			this.writeByte(b5);
+			this.writeByte(b6);
+			this.writeByte(b7);
+			this.writeByte(b8);
+		}
+	}
+	,writeFloat: function(x){
+		if(x == 0.0) {
+			this.writeByte(0);
+			this.writeByte(0);
+			this.writeByte(0);
+			this.writeByte(0);
+			return;
+		}
+		var exp = Math.floor(Math.log(Math.abs(x)) / haxe.io.Output.LN2);
+		var sig = Math.floor(Math.abs(x) / Math.pow(2,exp) * 8388608) & 8388607;
+		var b1;
+		b1 = exp + 127 >> 1 | (exp > 0?x < 0?128:64:x < 0?128:0);
+		var b2 = exp + 127 << 7 & 255 | sig >> 16 & 127;
+		var b3 = sig >> 8 & 255;
+		var b4 = sig & 255;
+		if(this.bigEndian) {
+			this.writeByte(b4);
+			this.writeByte(b3);
+			this.writeByte(b2);
+			this.writeByte(b1);
+		} else {
+			this.writeByte(b1);
+			this.writeByte(b2);
+			this.writeByte(b3);
+			this.writeByte(b4);
+		}
+	}
+	,writeFullBytes: function(s,pos,len){
+		while(len > 0) {
+			var k = this.writeBytes(s,pos,len);
+			pos += k;
+			len -= k;
+		}
+	}
+	,write: function(s){
+		var l = s.length;
+		var p = 0;
+		while(l > 0) {
+			var k = this.writeBytes(s,p,l);
+			if(k == 0) throw haxe.io.Error.Blocked;
+			p += k;
+			l -= k;
+		}
+	}
+	,set_bigEndian: function(b){
+		this.bigEndian = b;
+		return b;
+	}
+	,close: function(){
+	}
+	,flush: function(){
+	}
+	,writeBytes: function(s,pos,len){
+		var k = len;
+		var b = s.b;
+		if(pos < 0 || len < 0 || pos + len > s.length) throw haxe.io.Error.OutsideBounds;
+		while(k > 0) {
+			this.writeByte(b[pos]);
+			pos++;
+			k--;
+		}
+		return len;
+	}
+	,writeByte: function(c){
+		throw "Not implemented";
+	}
+	,bigEndian: null
+	,__class__: haxe.io.Output
+	,__properties__: {set_bigEndian:"set_bigEndian"}
+}
 haxe.io.BytesOutput = function(){
 	this.b = new haxe.io.BytesBuffer();
 };
 $hxClasses["haxe.io.BytesOutput"] = haxe.io.BytesOutput;
-haxe.io.BytesOutput.__name__ = true;
+haxe.io.BytesOutput.__name__ = ["haxe","io","BytesOutput"];
 haxe.io.BytesOutput.__super__ = haxe.io.Output;
 haxe.io.BytesOutput.prototype = $extend(haxe.io.Output.prototype,{
 	getBytes: function(){
 		return this.b.getBytes();
 	}
+	,writeBytes: function(buf,pos,len){
+		this.b.addBytes(buf,pos,len);
+		return len;
+	}
 	,writeByte: function(c){
 		this.b.b.push(c);
 	}
+	,get_length: function(){
+		return this.b.b.length;
+	}
+	,b: null
 	,__class__: haxe.io.BytesOutput
+	,__properties__: $extend(haxe.io.Output.prototype.__properties__,{get_length:"get_length"})
 });
 haxe.io.Eof = function(){
 };
 $hxClasses["haxe.io.Eof"] = haxe.io.Eof;
-haxe.io.Eof.__name__ = true;
+haxe.io.Eof.__name__ = ["haxe","io","Eof"];
 haxe.io.Eof.prototype = {
 	toString: function(){
 		return "Eof";
 	}
 	,__class__: haxe.io.Eof
 }
-haxe.io.Error = { __ename__ : true, __constructs__ : ["Blocked","Overflow","OutsideBounds","Custom"] }
+haxe.io.Error = $hxClasses["haxe.io.Error"] = { __ename__ : ["haxe","io","Error"], __constructs__ : ["Blocked","Overflow","OutsideBounds","Custom"] }
 haxe.io.Error.Blocked = ["Blocked",0];
 haxe.io.Error.Blocked.toString = $estr;
 haxe.io.Error.Blocked.__enum__ = haxe.io.Error;
@@ -457,7 +1795,7 @@ haxe.io.StringInput = function(s){
 	haxe.io.BytesInput.call(this,haxe.io.Bytes.ofString(s));
 };
 $hxClasses["haxe.io.StringInput"] = haxe.io.StringInput;
-haxe.io.StringInput.__name__ = true;
+haxe.io.StringInput.__name__ = ["haxe","io","StringInput"];
 haxe.io.StringInput.__super__ = haxe.io.BytesInput;
 haxe.io.StringInput.prototype = $extend(haxe.io.BytesInput.prototype,{
 	__class__: haxe.io.StringInput
@@ -472,7 +1810,7 @@ hscript.Bytes = function(bin){
 	this.nstrings = 1;
 };
 $hxClasses["hscript.Bytes"] = hscript.Bytes;
-hscript.Bytes.__name__ = true;
+hscript.Bytes.__name__ = ["hscript","Bytes"];
 hscript.Bytes.encode = function(e){
 	var b = new hscript.Bytes();
 	b.doEncode(e);
@@ -900,20 +2238,26 @@ hscript.Bytes.prototype = {
 			this.nstrings++;
 		} else this.bout.b.push(vid);
 	}
+	,nstrings: null
+	,strings: null
+	,hstrings: null
+	,pin: null
+	,bout: null
+	,bin: null
 	,__class__: hscript.Bytes
 }
-hscript.CaseFlags = { __ename__ : true, __constructs__ : ["HasGuard","HasExpr"] }
+hscript.CaseFlags = $hxClasses["hscript.CaseFlags"] = { __ename__ : ["hscript","CaseFlags"], __constructs__ : ["HasGuard","HasExpr"] }
 hscript.CaseFlags.HasGuard = ["HasGuard",0];
 hscript.CaseFlags.HasGuard.toString = $estr;
 hscript.CaseFlags.HasGuard.__enum__ = hscript.CaseFlags;
 hscript.CaseFlags.HasExpr = ["HasExpr",1];
 hscript.CaseFlags.HasExpr.toString = $estr;
 hscript.CaseFlags.HasExpr.__enum__ = hscript.CaseFlags;
-hscript.Const = { __ename__ : true, __constructs__ : ["CInt","CFloat","CString"] }
+hscript.Const = $hxClasses["hscript.Const"] = { __ename__ : ["hscript","Const"], __constructs__ : ["CInt","CFloat","CString"] }
 hscript.Const.CInt = function(v) { var $x = ["CInt",0,v]; $x.__enum__ = hscript.Const; $x.toString = $estr; return $x; }
 hscript.Const.CFloat = function(f) { var $x = ["CFloat",1,f]; $x.__enum__ = hscript.Const; $x.toString = $estr; return $x; }
 hscript.Const.CString = function(s) { var $x = ["CString",2,s]; $x.__enum__ = hscript.Const; $x.toString = $estr; return $x; }
-hscript.Expr = { __ename__ : true, __constructs__ : ["EConst","EIdent","EVar","EParent","EBlock","EField","EBinop","EUnop","ECall","EIf","EWhile","EFor","EBreak","EContinue","EFunction","EReturn","EArray","EArrayDecl","ENew","EThrow","ETry","EObject","ETernary","ESwitch"] }
+hscript.Expr = $hxClasses["hscript.Expr"] = { __ename__ : ["hscript","Expr"], __constructs__ : ["EConst","EIdent","EVar","EParent","EBlock","EField","EBinop","EUnop","ECall","EIf","EWhile","EFor","EBreak","EContinue","EFunction","EReturn","EArray","EArrayDecl","ENew","EThrow","ETry","EObject","ETernary","ESwitch"] }
 hscript.Expr.EConst = function(c) { var $x = ["EConst",0,c]; $x.__enum__ = hscript.Expr; $x.toString = $estr; return $x; }
 hscript.Expr.EIdent = function(v) { var $x = ["EIdent",1,v]; $x.__enum__ = hscript.Expr; $x.toString = $estr; return $x; }
 hscript.Expr.EVar = function(n,t,e) { var $x = ["EVar",2,n,t,e]; $x.__enum__ = hscript.Expr; $x.toString = $estr; return $x; }
@@ -942,12 +2286,12 @@ hscript.Expr.ETry = function(e,v,t,ecatch) { var $x = ["ETry",20,e,v,t,ecatch]; 
 hscript.Expr.EObject = function(fl) { var $x = ["EObject",21,fl]; $x.__enum__ = hscript.Expr; $x.toString = $estr; return $x; }
 hscript.Expr.ETernary = function(cond,e1,e2) { var $x = ["ETernary",22,cond,e1,e2]; $x.__enum__ = hscript.Expr; $x.toString = $estr; return $x; }
 hscript.Expr.ESwitch = function(e,cases,edef) { var $x = ["ESwitch",23,e,cases,edef]; $x.__enum__ = hscript.Expr; $x.toString = $estr; return $x; }
-hscript.CType = { __ename__ : true, __constructs__ : ["CTPath","CTFun","CTAnon","CTParent"] }
+hscript.CType = $hxClasses["hscript.CType"] = { __ename__ : ["hscript","CType"], __constructs__ : ["CTPath","CTFun","CTAnon","CTParent"] }
 hscript.CType.CTPath = function(path,params) { var $x = ["CTPath",0,path,params]; $x.__enum__ = hscript.CType; $x.toString = $estr; return $x; }
 hscript.CType.CTFun = function(args,ret) { var $x = ["CTFun",1,args,ret]; $x.__enum__ = hscript.CType; $x.toString = $estr; return $x; }
 hscript.CType.CTAnon = function(fields) { var $x = ["CTAnon",2,fields]; $x.__enum__ = hscript.CType; $x.toString = $estr; return $x; }
 hscript.CType.CTParent = function(t) { var $x = ["CTParent",3,t]; $x.__enum__ = hscript.CType; $x.toString = $estr; return $x; }
-hscript.Error = { __ename__ : true, __constructs__ : ["EInvalidChar","EUnexpected","EUnterminatedString","EUnterminatedComment","EUnknownVariable","EInvalidIterator","EInvalidOp","EInvalidAccess"] }
+hscript.Error = $hxClasses["hscript.Error"] = { __ename__ : ["hscript","Error"], __constructs__ : ["EInvalidChar","EUnexpected","EUnterminatedString","EUnterminatedComment","EUnknownVariable","EInvalidIterator","EInvalidOp","EInvalidAccess"] }
 hscript.Error.EInvalidChar = function(c) { var $x = ["EInvalidChar",0,c]; $x.__enum__ = hscript.Error; $x.toString = $estr; return $x; }
 hscript.Error.EUnexpected = function(s) { var $x = ["EUnexpected",1,s]; $x.__enum__ = hscript.Error; $x.toString = $estr; return $x; }
 hscript.Error.EUnterminatedString = ["EUnterminatedString",2];
@@ -964,11 +2308,11 @@ hscript.JsJit = function(){
 	this.variables = new haxe.ds.StringMap();
 };
 $hxClasses["hscript.JsJit"] = hscript.JsJit;
-hscript.JsJit.__name__ = true;
+hscript.JsJit.__name__ = ["hscript","JsJit"];
 hscript.JsJit.prototype = {
 	execute: function(e){
 		var compiled = this.compile(e);
-		console.log("Compiled " + Std.string(e) + " to " + compiled);
+		haxe.Log.trace("Compiled " + Std.string(e) + " to " + compiled,{ fileName : "JsJit.hx", lineNumber : 45, className : "hscript.JsJit", methodName : "execute"});
 		return eval(compiled);
 	}
 	,compile: function(e,av){
@@ -1355,9 +2699,10 @@ hscript.JsJit.prototype = {
 			return $r;
 		}(this));
 	}
+	,variables: null
 	,__class__: hscript.JsJit
 }
-hscript.Token = { __ename__ : true, __constructs__ : ["TEof","TConst","TId","TOp","TPOpen","TPClose","TBrOpen","TBrClose","TDot","TComma","TSemicolon","TBkOpen","TBkClose","TQuestion","TDoubleDot"] }
+hscript.Token = $hxClasses["hscript.Token"] = { __ename__ : ["hscript","Token"], __constructs__ : ["TEof","TConst","TId","TOp","TPOpen","TPClose","TBrOpen","TBrClose","TDot","TComma","TSemicolon","TBkOpen","TBkClose","TQuestion","TDoubleDot"] }
 hscript.Token.TEof = ["TEof",0];
 hscript.Token.TEof.toString = $estr;
 hscript.Token.TEof.__enum__ = hscript.Token;
@@ -1427,7 +2772,7 @@ hscript.Parser = function(){
 	}
 };
 $hxClasses["hscript.Parser"] = hscript.Parser;
-hscript.Parser.__name__ = true;
+hscript.Parser.__name__ = ["hscript","Parser"];
 hscript.Parser.prototype = {
 	tokenString: function(t){
 		switch(t[1]) {
@@ -2340,6 +3685,8 @@ hscript.Parser.prototype = {
 			return 0;
 		}
 	}
+	,incPos: function(){
+	}
 	,parseExprList: function(etk){
 		var args = new Array();
 		var tk = this.token();
@@ -2609,7 +3956,6 @@ hscript.Parser.prototype = {
 										case "|":
 											break;
 										default:
-											console.log(ntk);
 											throw "__break__";
 										}
 										break;
@@ -2623,12 +3969,10 @@ hscript.Parser.prototype = {
 											throw "__break__";
 											break;
 										default:
-											console.log(ntk);
 											throw "__break__";
 										}
 										break;
 									default:
-										console.log(ntk);
 										throw "__break__";
 									}
 									allowed.push(this.parseExpr());
@@ -2992,9 +4336,24 @@ hscript.Parser.prototype = {
 			return false;
 		}
 	}
+	,mk: function(e,pmin,pmax){
+		return e;
+	}
+	,pmax: function(e){
+		return 0;
+	}
+	,pmin: function(e){
+		return 0;
+	}
+	,expr: function(e){
+		return e;
+	}
 	,ensure: function(tk){
 		var t = this.token();
 		if(t != tk) this.unexpected(t);
+	}
+	,push: function(tk){
+		this.tokens.add(tk);
 	}
 	,unexpected: function(tk){
 		throw hscript.Error.EUnexpected(this.tokenString(tk));
@@ -3034,12 +4393,60 @@ hscript.Parser.prototype = {
 	,invalidChar: function(c){
 		throw hscript.Error.EInvalidChar(c);
 	}
+	,error: function(err,pmin,pmax){
+		throw err;
+	}
+	,tokens: null
+	,idents: null
+	,ops: null
+	,'char': null
+	,input: null
+	,allowTypes: null
+	,allowJSON: null
+	,unops: null
+	,opRightAssoc: null
+	,opPriority: null
+	,identChars: null
+	,opChars: null
+	,line: null
 	,__class__: hscript.Parser
 }
 var js = {}
 js.Boot = function() { }
 $hxClasses["js.Boot"] = js.Boot;
-js.Boot.__name__ = true;
+js.Boot.__name__ = ["js","Boot"];
+js.Boot.__unhtml = function(s){
+	return s.split("&").join("&amp;").split("<").join("&lt;").split(">").join("&gt;");
+}
+js.Boot.__trace = function(v,i){
+	var msg;
+	if(i != null) msg = i.fileName + ":" + i.lineNumber + ": "; else msg = "";
+	msg += js.Boot.__string_rec(v,"");
+	if(i != null && i.customParams != null) {
+		var _g = 0;
+		var _g1 = i.customParams;
+		while(_g < _g1.length) {
+			var v1 = _g1[_g];
+			++_g;
+			msg += "," + js.Boot.__string_rec(v1,"");
+		}
+	}
+	var d;
+	if(typeof(document) != "undefined" && (d = document.getElementById("haxe:trace")) != null) d.innerHTML += js.Boot.__unhtml(msg) + "<br/>"; else if(typeof(console) != "undefined" && console.log != null) console.log(msg);
+}
+js.Boot.__clear_trace = function(){
+	var d = document.getElementById("haxe:trace");
+	if(d != null) d.innerHTML = "";
+}
+js.Boot.isClass = function(o){
+	return o.__name__;
+}
+js.Boot.isEnum = function(e){
+	return e.__ename__;
+}
+js.Boot.getClass = function(o){
+	return o.__class__;
+}
 js.Boot.__string_rec = function(o,s){
 	if(o == null) return "null";
 	if(s.length >= 5) return "<...>";
@@ -3150,19 +4557,82 @@ js.Boot.__instanceof = function(o,cl){
 		return o.__enum__ == cl;
 	}
 }
+js.Boot.__cast = function(o,t){
+	if(js.Boot.__instanceof(o,t)) return o; else throw "Cannot cast " + Std.string(o) + " to " + Std.string(t);
+}
+js.Lib = function() { }
+$hxClasses["js.Lib"] = js.Lib;
+js.Lib.__name__ = ["js","Lib"];
+js.Lib.debug = function(){
+	debugger;
+}
+js.Lib.alert = function(v){
+	alert(js.Boot.__string_rec(v,""));
+}
+js.Lib["eval"] = function(code){
+	return eval(code);
+}
+function $iterator(o) { if( o instanceof Array ) return function() { return HxOverrides.iter(o); }; return typeof(o.iterator) == 'function' ? $bind(o,o.iterator) : o.iterator; };
 var $_, $fid = 0;
 function $bind(o,m) { if( m == null ) return null; if( m.__id__ == null ) m.__id__ = $fid++; var f; if( o.hx__closures__ == null ) o.hx__closures__ = {}; else f = o.hx__closures__[m.__id__]; if( f == null ) { f = function(){ return f.method.apply(f.scope, arguments); }; f.scope = o; f.method = m; o.hx__closures__[m.__id__] = f; } return f; };
+if(Array.prototype.indexOf) HxOverrides.remove = function(a,o){
+	var i = a.indexOf(o);
+	if(i == -1) return false;
+	a.splice(i,1);
+	return true;
+};
+Math.__name__ = ["Math"];
+Math.NaN = Number.NaN;
+Math.NEGATIVE_INFINITY = Number.NEGATIVE_INFINITY;
+Math.POSITIVE_INFINITY = Number.POSITIVE_INFINITY;
+$hxClasses.Math = Math;
+Math.isFinite = function(i){
+	return isFinite(i);
+};
+Math.isNaN = function(i){
+	return isNaN(i);
+};
 String.prototype.__class__ = $hxClasses.String = String;
-String.__name__ = true;
+String.__name__ = ["String"];
 Array.prototype.__class__ = $hxClasses.Array = Array;
-Array.__name__ = true;
+Array.__name__ = ["Array"];
+Date.prototype.__class__ = $hxClasses.Date = Date;
+Date.__name__ = ["Date"];
 var Int = $hxClasses.Int = { __name__ : ["Int"]};
 var Dynamic = $hxClasses.Dynamic = { __name__ : ["Dynamic"]};
 var Float = $hxClasses.Float = Number;
 Float.__name__ = ["Float"];
-var Bool = Boolean;
+var Bool = $hxClasses.Bool = Boolean;
 Bool.__ename__ = ["Bool"];
 var Class = $hxClasses.Class = { __name__ : ["Class"]};
 var Enum = { };
+var Void = $hxClasses.Void = { __ename__ : ["Void"]};
+if(Array.prototype.map == null) Array.prototype.map = function(f){
+	var a = [];
+	var _g1 = 0;
+	var _g = this.length;
+	while(_g1 < _g) {
+		var i = _g1++;
+		a[i] = f(this[i]);
+	}
+	return a;
+};
+if(Array.prototype.filter == null) Array.prototype.filter = function(f){
+	var a = [];
+	var _g1 = 0;
+	var _g = this.length;
+	while(_g1 < _g) {
+		var i = _g1++;
+		var e = this[i];
+		if(f(e)) a.push(e);
+	}
+	return a;
+};
+haxe.ds.ObjectMap.count = 0;
+haxe.io.Output.LN2 = Math.log(2);
+hscript.Parser.p1 = 0;
+hscript.Parser.readPos = 0;
+hscript.Parser.tokenMin = 0;
+hscript.Parser.tokenMax = 0;
 Test.main();
 })();

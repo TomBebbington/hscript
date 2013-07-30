@@ -1,7 +1,6 @@
 class Test {
 
 	static function test(x,v:Dynamic,?vars : Dynamic) {
-		trace('Running $x');
 		var p = new hscript.Parser();
 		var program = p.parseString(x);
 		var bytes = hscript.Bytes.encode(program);
@@ -17,7 +16,12 @@ class Test {
 	static function main() {
 		test("0",0);
 		test("0xFF", 255);
-		test("switch(29) {case all if(all < 64): 'goodbye'; default: 'hallo';}", "goodbye");
+		test("switch(29) {
+			case all if(all < 64):
+				'goodbye';
+			default: 
+				'hallo';
+		}", "goodbye");
 		test("switch(5 * 5) {case 25: 1; default: 50;}", 1);
 		test("switch(5 * 5) {case 25 if(false): 1; default: 50;}", 50);
 		#if haxe3
@@ -47,7 +51,6 @@ class Test {
 		test("-1 + 2",1);
 		test("1 / 5",0.2);
 		test("3 * 2 + 5",11);
-		test("[for(i in a) 2 * i][0]", 2, {a: [1, 2, 3]});
 		test("3 * (2 + 5)",21);
 		test("3 * 2 // + 5 \n + 6",12);
 		test("3 /* 2\n */ + 5",8);
@@ -84,12 +87,13 @@ class Test {
 		test("var i=2; if( true ) --i; i",1);
 		test("var i=0; if( i++ > 0 ) i=3; i",1);
 		test("var a = 5/2; a",2.5);
+		test("[for(i in 1...4) i*2].join('-')", "2-4-6");
 		test("{ x = 3; x; }", 3);
 		test("{ x : 3, y : {} }.x", 3);
 		test("function bug(){ \n }\nbug().x", null);
 		test("1 + 2 == 3", true);
 		test("-2 == 3 - 5", true);
-		trace("Done");
+		trace("Done - all tests passed successfully");
 	}
 
 }
