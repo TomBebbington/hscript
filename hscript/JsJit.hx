@@ -34,6 +34,8 @@ class JsJit {
 			case EContinue: "continue";
 			case EBreak: "break";
 			case EFunction(args, e, name, ret): "function"+(name == null ? "" : ' $name')+"("+[for(a in args) a.name].join(", ")+")"+'{${compile(e, true)}}';
+			case ESwitch(e, cases, def):
+				'function(v){return null;}(${compile(e, true)})';
 			case ENew(cl, ps): Type.createInstance(Type.resolveClass(cl), [for(p in ps) compile(p, true)]);
 			case EFor(v, it, e): '';
 		}

@@ -32,7 +32,11 @@ enum Const {
 	CInt32( v : haxe.Int32 );
 	#end
 }
-
+typedef Case = {
+	var values:Array<Expr>;
+	@:optional var guard:Expr;
+	@:optional var expr:Expr;
+}
 #if hscriptPos
 typedef Expr = {
 	var e : ExprDef;
@@ -66,6 +70,7 @@ enum Expr {
 	ETry( e : Expr, v : String, t : Null<CType>, ecatch : Expr );
 	EObject( fl : Array<{ name : String, e : Expr }> );
 	ETernary( cond : Expr, e1 : Expr, e2 : Expr );
+	ESwitch(e : Expr,cases : Array<Case>,edef : Null<Null<Expr>>);
 }
 
 enum CType {

@@ -241,6 +241,7 @@ class Parser {
 		case EWhile(_,e): isBlock(e);
 		case EFor(_,_,e): isBlock(e);
 		case EReturn(e): e != null && isBlock(e);
+		case ESwitch(_, _, _): true;
 		default: false;
 		}
 	}
@@ -455,6 +456,45 @@ class Parser {
 			ensure(TPClose);
 			var e = parseExpr();
 			mk(EFor(vname,eiter,e),p1,pmax(e));
+		case "switch":
+			ensure(TPOpen);
+			var val = parseExpr();
+			ensure(TPClose);
+			ensure(Token.TBrOpen);
+			var cases:Array<Case> = [];
+			var def:Expr = null;
+			while(true) {
+				var tk = token();
+				switch(tk) {
+					case TId("case"):
+						var allowed:Array<Expr> = [];
+						allowed.push(parseExpr());
+						var ntk = null;
+						while(true) {
+							switch(ntk = token()) {
+								case Token.TComma | Token.TOp("|"):
+
+								default: break;
+							}
+							allowed.push(parseExpr());
+						}
+						switch(ntk) {
+							case TDoubleDot: 
+							default: unexpected(tk);
+						}
+						var expr:Expr = parseExpr();
+						ensure(TSemicolon);
+						cases.push({values: allowed, expr: expr});
+					case TId("default"):
+						ensure(TDoubleDot);
+						var expr:Expr = parseExpr();
+						ensure(TSemicolon);
+					case TBrClose:
+						break;
+					default: unexpected(tk);
+				}
+			}
+			mk(ESwitch(val, cases, def));
 		case "break": mk(EBreak);
 		case "continue": mk(EContinue);
 		case "else": unexpected(TId(id));

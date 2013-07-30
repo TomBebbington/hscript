@@ -219,6 +219,26 @@ class Bytes {
 			doEncode(cond);
 			doEncode(e1);
 			doEncode(e2);
+		case ESwitch(e, cases, def):
+			doEncode(e);
+			bout.addByte(cases.length);
+			for(c in cases) {
+				var flags = new haxe.EnumFlags<CaseFlags>();
+				if(c.guard != null)
+					flags.set(CaseFlags.HasGuard);
+				if(c.expr != null)
+					flags.set(CaseFlags.HasExpr);
+				bout.addByte(flags.toInt());
+				bout.addByte(c.values.length);
+				for(v in c.values)
+					doEncode(v);
+				if(c.guard != null)
+					doEncode(c.guard);
+				if(c.expr != null)
+					doEncode(c.expr);
+			}
+			bout.addByte(def == null ? 0 : 1);
+			if(def != null) doEncode(def);
 		}
 	}
 
@@ -307,6 +327,17 @@ class Bytes {
 				fl.push({ name : name, e : e });
 			}
 			EObject(fl);
+		case 23:
+			var e = doDecode();
+			var cases = [for( i in 0...bin.get(pin++)) {
+				var flags = new haxe.EnumFlags<CaseFlags>(bin.get(pin++));
+				var values = [for(i in 0...bin.get(pin++)) doDecode()];
+				var guard = flags.has(HasGuard) ? doDecode() : null;
+				var expr = flags.has(HasExpr) ? doDecode() : null;
+				{values: values, guard: guard, expr: expr};
+			}];
+			var edef = bin.get(pin++) == 1 ? doDecode() : null;
+			ESwitch(e, cases, edef);
 		case 255:
 			null;
 		default:
@@ -325,4 +356,8 @@ class Bytes {
 		return b.doDecode();
 	}
 
+}
+enum CaseFlags {
+	HasGuard;
+	HasExpr;
 }
