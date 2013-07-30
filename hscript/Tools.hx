@@ -1,0 +1,5 @@
+package hscript;
+
+class Tools {
+	
+}

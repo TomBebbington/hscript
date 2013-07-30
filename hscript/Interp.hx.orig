@@ -344,19 +344,6 @@ class Interp {
 					locals.set(v, {r:i});
 					expr(e);
 				}];
-			case EArrayDecl(map) if(map.length > 0 && switch(map[0]) {
-				case EBinop("=>", _, _): true;
-				default: false;
-			}):
-				var m = new haxe.ds.ObjectMap();
-				for(item in map) {
-					switch(item) {
-						case EBinop("=>", a, b):
-							m.set(expr(a), expr(b));
-						default:
-					}
-				}
-				return m;
 			case EArrayDecl(arr):
 				var a = new Array();
 				for(e in arr)
@@ -448,7 +435,12 @@ class Interp {
 	function makeIterator(v:Dynamic):Iterator<Dynamic> {
 		if(v.iterator != null) v = v.iterator();
 		var c = Type.getClass(v);
+<<<<<<< HEAD
 		
+=======
+		if(c != null)
+			trace(Type.getClassName(c));
+>>>>>>> parent of 277df81... Added a few more tests
 		if(c == null && (v.hasNext == null || v.next == null)) throw Error.EInvalidIterator(v);
 		return v;
 	}
@@ -476,7 +468,6 @@ class Interp {
 
 	function get(o:Dynamic, f:String):Dynamic {
 		if(o == null) throw Error.EInvalidAccess(f);
-		if(f == "code" && Std.is(o, String)) return o.charCodeAt(0);
 		return Reflect.field(o,f);
 	}
 
