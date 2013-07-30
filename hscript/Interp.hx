@@ -435,8 +435,7 @@ class Interp {
 	function makeIterator(v:Dynamic):Iterator<Dynamic> {
 		if(v.iterator != null) v = v.iterator();
 		var c = Type.getClass(v);
-		if(c != null)
-			trace(Type.getClassName(c));
+		
 		if(c == null && (v.hasNext == null || v.next == null)) throw Error.EInvalidIterator(v);
 		return v;
 	}
