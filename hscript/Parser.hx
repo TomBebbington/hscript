@@ -563,20 +563,25 @@ class Parser {
 			case TId(id): a.push(id);
 			default: unexpected(tk);
 			}
-			var next = true;
+			var next = true, hasType = false;
 			while( next ) {
 				tk = token();
 				switch( tk ) {
-				case TDot:
-					tk = token();
-					switch(tk) {
-					case TId(id): a.push(id);
-					default: unexpected(tk);
-					}
-				case TPOpen:
-					next = false;
-				default:
-					unexpected(tk);
+					case Token.TOp("<"):
+						parseType();
+						hasType = true;
+					case TComma if(hasType):
+						parseType();
+					case TDot:
+						tk = token();
+						switch(tk) {
+						case TId(id): a.push(id);
+						default: unexpected(tk);
+						}
+					case TPOpen:
+						next = false;
+					default:
+						unexpected(tk);
 				}
 			}
 			var args = parseExprList(TPClose);

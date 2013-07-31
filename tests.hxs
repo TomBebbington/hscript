@@ -4,3 +4,15 @@ trace([for(a in args) a => null]);
 var x = 10;
 trace([while(x > -5) x--]);
 trace([while(x < 10) x => ++x]);
+var complex = [
+	"awesomeness" => [0, 3, 6]
+	"coolness" => Math.POSITIVE_INFINITY,
+	"some more" => [
+		"this" => "is so awesome"
+	]
+];
+var a = new Array<Int>();
+for(i in 0...100)
+	a.push(i * 2);
+trace(a);
+trace(complex.toString());

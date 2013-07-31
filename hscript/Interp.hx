@@ -230,9 +230,12 @@ class Interp {
 		if(l != null)
 			return l.r;
 		var v = variables.get(id);
-		if(v == null && !variables.exists(id))
-			throw Error.EUnknownVariable(id);
-		return v;
+		if(variables.exists(id))
+			return v;
+		var c = Type.resolveClass(id);
+		if(c != null)
+			return c;
+		throw Error.EUnknownVariable(id);
 	}
 	public function expr(e:Expr):Dynamic {
 		switch(e) {
@@ -347,12 +350,7 @@ class Interp {
 							var key = expr(ekey);
 							var val = expr(evalue);
 							if(m == null)
-								m = if(Std.is(key, Int))
-									new haxe.ds.IntMap();
-								else if(Std.is(key, String))
-									new haxe.ds.StringMap();
-								else
-									new haxe.ds.ObjectMap();
+								m = selectMap(key);
 							m.set(key, val);
 						}
 						return m;
@@ -369,12 +367,7 @@ class Interp {
 							var key = expr(ekey);
 							var val = expr(evalue);
 							if(m == null)
-								m = if(Std.is(key, Int))
-									new haxe.ds.IntMap();
-								else if(Std.is(key, String))
-									new haxe.ds.StringMap();
-								else
-									new haxe.ds.ObjectMap();
+								m = selectMap(key);
 							m.set(key, val);
 						}
 						return m;
@@ -497,7 +490,11 @@ class Interp {
 		if(c == null && (v.hasNext == null || v.next == null)) throw Error.EInvalidIterator(v);
 		return v;
 	}
-
+	static function selectMap<K>(key:K):Map.IMap<K, Dynamic> {
+		return if(Std.is(key, String)) cast new haxe.ds.StringMap();
+		else if(Std.is(key, Int)) cast new haxe.ds.IntMap();
+		else new haxe.ds.ObjectMap();
+	}
 	function forLoop(n,it,e) {
 		var old = declared.length;
 		declared.push({ n:n, old:locals.get(n) });
