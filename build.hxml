@@ -1,9 +1,5 @@
--js hscript.js
--main Test
--dce no
---next
 -neko hscript.n
--main Test 
--dce no
+-main Test
+-dce full
 -debug
 -cmd neko hscript.n

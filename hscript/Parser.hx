@@ -504,6 +504,7 @@ class Parser {
 			mk(ESwitch(val, cases, def));
 		case "break": mk(EBreak);
 		case "continue": mk(EContinue);
+		case "untyped": mk(EUntyped(parseExpr()));
 		case "else": unexpected(TId(id));
 		case "function":
 			var tk = token();

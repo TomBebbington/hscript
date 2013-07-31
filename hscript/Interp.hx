@@ -234,9 +234,9 @@ class Interp {
 			throw Error.EUnknownVariable(id);
 		return v;
 	}
-
 	public function expr(e:Expr):Dynamic {
 		switch(e) {
+			case EUntyped(e): expr(e);
 			case EConst(c):
 				switch(c) {
 					case CInt(v):return v;
@@ -348,11 +348,16 @@ class Interp {
 				case EBinop("=>", _, _): true;
 				default: false;
 			}):
-				var m = new haxe.ds.ObjectMap();
+				var m:Map.IMap<Dynamic, Dynamic> = null;
 				for(item in map) {
 					switch(item) {
 						case EBinop("=>", a, b):
-							m.set(expr(a), expr(b));
+							var k = expr(a);
+							if(m == null)
+								m = if(Std.is(k, String)) new haxe.ds.StringMap()
+								else if(Std.is(k, Int)) new haxe.ds.IntMap()
+								else new haxe.ds.ObjectMap();
+							m.set(k, expr(b));
 						default:
 					}
 				}

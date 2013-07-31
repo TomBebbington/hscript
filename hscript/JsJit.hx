@@ -38,6 +38,7 @@ class JsJit {
 				'function(v){return null;}(${compile(e, true)})';
 			case ENew(cl, ps): Type.createInstance(Type.resolveClass(cl), [for(p in ps) compile(p, true)]);
 			case EFor(v, it, e): '';
+			case EUntyped(e): compile(e, true);
 		}
 	}
 	public function execute(e:Expr):Dynamic {

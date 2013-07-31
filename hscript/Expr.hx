@@ -62,6 +62,7 @@ enum Expr {
 	EObject( fl : Array<{ name : String, e : Expr }> );
 	ETernary( cond : Expr, e1 : Expr, e2 : Expr );
 	ESwitch(e : Expr,cases : Array<Case>,edef : Null<Null<Expr>>);
+	EUntyped( e:Expr);
 }
 
 enum CType {

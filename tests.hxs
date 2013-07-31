@@ -1,7 +1,2 @@
-function mustEq(a:Dynamic, b:Dynamic):Bool
-	if(a != b)
-		throw '$a should be $b';
-trace([
-	"awesomeness" => 50
-]);
-mustEq([for(i in "a".code..."c".code) String.fromCharCode(i+1)].join("-"), "b-c");
+trace("Hello, world!");
+trace(args);

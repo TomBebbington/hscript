@@ -239,6 +239,8 @@ class Bytes {
 			}
 			bout.addByte(def == null ? 0 : 1);
 			if(def != null) doEncode(def);
+		case EUntyped(e):
+			doEncode(e);
 		}
 	}
 
@@ -327,6 +329,10 @@ class Bytes {
 				fl.push({ name : name, e : e });
 			}
 			EObject(fl);
+		case 22:
+			var cond = doDecode();
+			var e1 = doDecode();
+			ETernary(cond, e1, doDecode());
 		case 23:
 			var e = doDecode();
 			var cases = [for( i in 0...bin.get(pin++)) {
@@ -338,10 +344,12 @@ class Bytes {
 			}];
 			var edef = bin.get(pin++) == 1 ? doDecode() : null;
 			ESwitch(e, cases, edef);
+		case 24:
+			EUntyped(doDecode());
 		case 255:
 			null;
 		default:
-			throw "Invalid code "+bin.get(pin - 1);
+			throw "Invalid code "+bin.get(pin - 1) + " AKA " + Type.getEnumConstructs(Expr)[bin.get(pin-1)];
 		}
 	}
 
