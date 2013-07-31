@@ -404,222 +404,266 @@ class Parser {
 		var p1 = tokenMin;
 		#end
 		return switch( id ) {
-		case "if":
-			var cond = parseExpr();
-			var e1 = parseExpr();
-			var e2 = null;
-			var semic = false;
-			var tk = token();
-			if( tk == TSemicolon ) {
-				semic = true;
-				tk = token();
-			}
-			if( Type.enumEq(tk,TId("else")) )
-				e2 = parseExpr();
-			else {
-				push(tk);
-				if( semic ) push(TSemicolon);
-			}
-			mk(EIf(cond,e1,e2),p1,(e2 == null) ? tokenMax : pmax(e2));
-		case "var":
-			var vars:Array<Var> = [];
-			var tk = null;
-			vars = [while((tk = tk == null ? token() : tk) != Token.TSemicolon) {
-				var ident = null, type = null, expr = null;
-				while(tk == Token.TComma)
-					tk = token();
-				switch(tk) {
-					case TId(id): ident = id;
-					default: unexpected(tk);
-				}
-				tk = token();
-				switch(tk) {
-					case TDoubleDot if(type == null):
-						type = parseType();
-						tk = token();
-					default:
-				}
-				switch(tk) {
-					case _ if(type != null):
-						push(tk);
-						expr = parseExpr();
-						tk = token();
-					case TOp("="):
-						expr = parseExpr();
-						tk = token();
-					case TSemicolon | TComma:
-					default: unexpected(tk);
-				}
-				{name: ident, type: type, expr: expr};
-			}];
-			push(tk);
-			mk(EVars(vars),p1, tokenMax);
-		case "while":
-			var econd = parseExpr();
-			var e = parseExpr();
-			mk(EWhile(econd,e),p1,pmax(e));
-		case "for":
-			ensure(TPOpen);
-			var tk = token();
-			var vname = null;
-			switch( tk ) {
-			case TId(id): vname = id;
-			default: unexpected(tk);
-			}
-			tk = token();
-			if( !Type.enumEq(tk,TId("in")) ) unexpected(tk);
-			var eiter = parseExpr();
-			ensure(TPClose);
-			var e = parseExpr();
-			mk(EFor(vname,eiter,e),p1,pmax(e));
-		case "switch":
-			ensure(TPOpen);
-			var val = parseExpr();
-			ensure(TPClose);
-			ensure(Token.TBrOpen);
-			var cases:Array<Case> = [];
-			var def:Expr = null;
-			while(true) {
-				var tk = token();
-				switch(tk) {
-					case TId("case"):
-						var allowed:Array<Expr> = [];
-						allowed.push(parseExpr());
-						var guard:Expr = null;
-						var ntk = null;
-						while(true) {
-							switch(ntk = token()) {
-								case Token.TComma | Token.TOp("|"):
-
-								case Token.TId("if"):
-									ensure(TPOpen);
-									guard = parseExpr();
-									ensure(TPClose);
-									ntk = token();
-									break;
-								default: break;
-							}
-							allowed.push(parseExpr());
-						}
-						switch(ntk) {
-							case TDoubleDot:
-							default: unexpected(ntk);
-						}
-						var expr:Expr = parseExpr();
-						ensure(TSemicolon);
-						cases.push({values: allowed, expr: expr, guard: guard});
-					case TId("default"):
-						ensure(TDoubleDot);
-						def = parseExpr();
-						ensure(TSemicolon);
-					case TBrClose:
-						break;
-					default: unexpected(tk);
-				}
-			}
-			mk(ESwitch(val, cases, def));
-		case "break": mk(EBreak);
-		case "continue": mk(EContinue);
-		case "untyped": mk(EUntyped(parseExpr()));
-		case "else": unexpected(TId(id));
-		case "function":
-			var tk = token();
-			var name = null;
-			switch( tk ) {
-				case TId(id): name = id;
-				default: push(tk);
-			}
-			ensure(TPOpen);
-			var args = new Array();
-			tk = token();
-			if( tk != TPClose ) {
-				var arg = true;
-				while( arg ) {
+			case "class":
+				var name:String = switch(token()) {
+					case TId(s): s;
+					case all: unexpected(all);
+				};
+				var cd:ClassDecl = {
+					name: name,
+					fields: new Map()
+				};
+				ensure(TBrOpen);
+				var tk = null;
+				while(tk != Token.TBrClose) {
+					var field:Field = {access: new haxe.EnumFlags()};
 					var name = null;
-					switch( tk ) {
-						case TId(id): name = id;
+					var canSkip = false;
+					while((tk = token()) != Token.TSemicolon && tk != Token.TBrClose) {
+						switch(tk) {
+							case _ if(canSkip): push(tk); field.expr = parseExpr(); canSkip = false;
+							case TId("public"): field.access.set(Access.Public);
+							case TId("private"): field.access.set(Access.Private);
+							case TId("static"): field.access.set(Access.Static);
+							case TId("var"): name = switch(tk = token()) {
+								case TId(s): s;
+								case all: unexpected(all);
+							}
+							case TDoubleDot: field.type = parseType(); canSkip = true;
+							case TId("function"):
+								field.access.set(Access.Function);
+								push(tk);
+								field.expr = parseExpr();
+								switch(field.expr) {
+									case EFunction(_, _, nam, _): name = nam;
+									default:
+								};
+								trace(field);
+							case TOp("="): field.expr = parseExpr();
+							case TSemicolon: break;
+							default: unexpected(tk);
+						}
+					}
+					if(name != null)
+						cd.fields[name] = field;
+				};
+				mk(EClassDecl(cd), p1, tokenMax);
+			case "if":
+				var cond = parseExpr();
+				var e1 = parseExpr();
+				var e2 = null;
+				var semic = false;
+				var tk = token();
+				if( tk == TSemicolon ) {
+					semic = true;
+					tk = token();
+				}
+				if( Type.enumEq(tk,TId("else")) )
+					e2 = parseExpr();
+				else {
+					push(tk);
+					if( semic ) push(TSemicolon);
+				}
+				mk(EIf(cond,e1,e2),p1,(e2 == null) ? tokenMax : pmax(e2));
+			case "var":
+				var vars:Array<Var> = [];
+				var tk = null;
+				vars = [while((tk = tk == null ? token() : tk) != Token.TSemicolon) {
+					var ident = null, type = null, expr = null;
+					while(tk == Token.TComma)
+						tk = token();
+					switch(tk) {
+						case TId(id): ident = id;
 						default: unexpected(tk);
 					}
 					tk = token();
-					var t = null;
-					if( tk == TDoubleDot) {
-						t = parseType();
-						tk = token();
+					switch(tk) {
+						case TDoubleDot if(type == null):
+							type = parseType();
+							tk = token();
+						default:
 					}
-					args.push( { name : name, t : t } );
-					switch( tk ) {
-					case TComma:
-						tk = token();
-					case TPClose:
-						arg = false;
-					default:
-						unexpected(tk);
-					}
-				}
-			}
-			var ret = null;
-			tk = token();
-			if( tk != TDoubleDot )
-				push(tk);
-			else
-				ret = parseType();
-			var body = parseExpr();
-			mk(EFunction(args, body, name, ret),p1,pmax(body));
-		case "return":
-			var tk = token();
-			push(tk);
-			var e = if( tk == TSemicolon ) null else parseExpr();
-			mk(EReturn(e),p1,if( e == null ) tokenMax else pmax(e));
-		case "new":
-			var a = new Array();
-			var tk = token();
-			switch( tk ) {
-			case TId(id): a.push(id);
-			default: unexpected(tk);
-			}
-			var next = true, hasType = false;
-			while( next ) {
-				tk = token();
-				switch( tk ) {
-					case Token.TOp("<"):
-						parseType();
-						hasType = true;
-					case TComma if(hasType):
-						parseType();
-					case TDot:
-						tk = token();
-						switch(tk) {
-						case TId(id): a.push(id);
+					switch(tk) {
+						case _ if(type != null):
+							push(tk);
+							expr = parseExpr();
+							tk = token();
+						case TOp("="):
+							expr = parseExpr();
+							tk = token();
+						case TSemicolon | TComma:
 						default: unexpected(tk);
-						}
-					case TPOpen:
-						next = false;
-					default:
-						unexpected(tk);
+					}
+					{name: ident, type: type, expr: expr};
+				}];
+				push(tk);
+				mk(EVars(vars),p1, tokenMax);
+			case "while":
+				var econd = parseExpr();
+				var e = parseExpr();
+				mk(EWhile(econd,e),p1,pmax(e));
+			case "for":
+				ensure(TPOpen);
+				var tk = token();
+				var vname = null;
+				switch( tk ) {
+				case TId(id): vname = id;
+				default: unexpected(tk);
 				}
-			}
-			var args = parseExprList(TPClose);
-			mk(ENew(a.join("."),args),p1);
-		case "throw":
-			var e = parseExpr();
-			mk(EThrow(e),p1,pmax(e));
-		case "try":
-			var e = parseExpr();
-			var tk = token();
-			if( !Type.enumEq(tk, TId("catch")) ) unexpected(tk);
-			ensure(TPOpen);
-			tk = token();
-			var vname = switch( tk ) {
-			case TId(id): id;
-			default: unexpected(tk);
-			}
-			ensure(TDoubleDot);
-			var t = parseType();
-			ensure(TPClose);
-			var ec = parseExpr();
-			mk(ETry(e,vname,t,ec),p1,pmax(ec));
-		default:
-			null;
+				tk = token();
+				if( !Type.enumEq(tk,TId("in")) ) unexpected(tk);
+				var eiter = parseExpr();
+				ensure(TPClose);
+				var e = parseExpr();
+				mk(EFor(vname,eiter,e),p1,pmax(e));
+			case "switch":
+				ensure(TPOpen);
+				var val = parseExpr();
+				ensure(TPClose);
+				ensure(Token.TBrOpen);
+				var cases:Array<Case> = [];
+				var def:Expr = null;
+				while(true) {
+					var tk = token();
+					switch(tk) {
+						case TId("case"):
+							var allowed:Array<Expr> = [];
+							allowed.push(parseExpr());
+							var guard:Expr = null;
+							var ntk = null;
+							while(true) {
+								switch(ntk = token()) {
+									case Token.TComma | Token.TOp("|"):
+
+									case Token.TId("if"):
+										ensure(TPOpen);
+										guard = parseExpr();
+										ensure(TPClose);
+										ntk = token();
+										break;
+									default: break;
+								}
+								allowed.push(parseExpr());
+							}
+							switch(ntk) {
+								case TDoubleDot:
+								default: unexpected(ntk);
+							}
+							var expr:Expr = parseExpr();
+							ensure(TSemicolon);
+							cases.push({values: allowed, expr: expr, guard: guard});
+						case TId("default"):
+							ensure(TDoubleDot);
+							def = parseExpr();
+							ensure(TSemicolon);
+						case TBrClose:
+							break;
+						default: unexpected(tk);
+					}
+				}
+				mk(ESwitch(val, cases, def));
+			case "break": mk(EBreak);
+			case "continue": mk(EContinue);
+			case "untyped": mk(EUntyped(parseExpr()));
+			case "else": unexpected(TId(id));
+			case "function":
+				var tk = token();
+				var name = null;
+				switch( tk ) {
+					case TId(id): name = id;
+					default: push(tk);
+				}
+				ensure(TPOpen);
+				var args = new Array();
+				tk = token();
+				if( tk != TPClose ) {
+					var arg = true;
+					while( arg ) {
+						var name = null;
+						switch( tk ) {
+							case TId(id): name = id;
+							default: unexpected(tk);
+						}
+						tk = token();
+						var t = null;
+						if( tk == TDoubleDot) {
+							t = parseType();
+							tk = token();
+						}
+						args.push( { name : name, t : t } );
+						switch( tk ) {
+						case TComma:
+							tk = token();
+						case TPClose:
+							arg = false;
+						default:
+							unexpected(tk);
+						}
+					}
+				}
+				var ret = null;
+				tk = token();
+				if( tk != TDoubleDot )
+					push(tk);
+				else
+					ret = parseType();
+				var body = parseExpr();
+				mk(EFunction(args, body, name, ret),p1,pmax(body));
+			case "return":
+				var tk = token();
+				push(tk);
+				var e = if( tk == TSemicolon ) null else parseExpr();
+				mk(EReturn(e),p1,if( e == null ) tokenMax else pmax(e));
+			case "new":
+				var a = new Array();
+				var tk = token();
+				switch( tk ) {
+				case TId(id): a.push(id);
+				default: unexpected(tk);
+				}
+				var next = true, hasType = false;
+				while( next ) {
+					tk = token();
+					switch( tk ) {
+						case Token.TOp("<"):
+							parseType();
+							hasType = true;
+						case TComma if(hasType):
+							parseType();
+						case TDot:
+							tk = token();
+							switch(tk) {
+							case TId(id): a.push(id);
+							default: unexpected(tk);
+							}
+						case TPOpen:
+							next = false;
+						default:
+							unexpected(tk);
+					}
+				}
+				var args = parseExprList(TPClose);
+				mk(ENew(a.join("."),args),p1);
+			case "throw":
+				var e = parseExpr();
+				mk(EThrow(e),p1,pmax(e));
+			case "try":
+				var e = parseExpr();
+				var tk = token();
+				if( !Type.enumEq(tk, TId("catch")) ) unexpected(tk);
+				ensure(TPOpen);
+				tk = token();
+				var vname = switch( tk ) {
+				case TId(id): id;
+				default: unexpected(tk);
+				}
+				ensure(TDoubleDot);
+				var t = parseType();
+				ensure(TPClose);
+				var ec = parseExpr();
+				mk(ETry(e,vname,t,ec),p1,pmax(ec));
+			default:
+				null;
 		}
 	}
 

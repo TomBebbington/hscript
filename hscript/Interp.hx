@@ -32,27 +32,16 @@ private enum Stop {
 }
 
 class Interp {
-
-	#if haxe3
 	public var variables:Map<String,Dynamic>;
 	var locals:Map<String,{ r:Dynamic }>;
 	var binops:Map<String, Expr -> Expr -> Dynamic >;
-	#else
-	public var variables:Hash<Dynamic>;
-	var locals:Hash<{ r:Dynamic }>;
-	var binops:Hash< Expr -> Expr -> Dynamic >;
-	#end
-	
+	var classes:Map<String, ClassDecl>;
 	var declared:Array<{ n:String, old:{ r:Dynamic } }>;
 
 	public function new() {
-		#if haxe3
 		locals = new Map();
 		variables = new Map<String,Dynamic>();
-		#else
-		locals = new Hash();
-		variables = new Hash();
-		#end
+		classes = new Map();
 		declared = new Array();
 		variables.set("null",null);
 		variables.set("true",true);
@@ -187,25 +176,20 @@ class Interp {
 	}
 
 	public function execute(expr:Expr):Dynamic {
-		#if haxe3
 		locals = new Map();
-		#else
-		locals = new Hash();
-		#end
 		return exprReturn(expr);
 	}
 
 	function exprReturn(e):Dynamic {
-		try {
-			return expr(e);
-		} catch(e:Stop) {
+		return try
+			expr(e)
+		catch(e:Stop) {
 			switch(e) {
-				case SBreak:throw "Invalid break";
-				case SContinue:throw "Invalid continue";
-				case SReturn(v):return v;
+				case SBreak: throw "Invalid break";
+				case SContinue: throw "Invalid continue";
+				case SReturn(v): v;
 			}
 		}
-		return null;
 	}
 
 	function duplicate<T>(h:#if haxe3 Map < String, T > #else Hash<T> #end) {
@@ -240,6 +224,14 @@ class Interp {
 	}
 	public function expr(e:Expr):Dynamic {
 		switch(e) {
+			case EClassDecl(c):
+				classes.set(c.name, c);
+				var o:Dynamic = {};
+				for(fn in c.fields.keys())
+					if(c.fields[fn].access.has(Static))
+						Reflect.setField(o, fn, expr(c.fields[fn].expr));
+				declared.push({n: c.name, old: locals[c.name]});
+				locals.set(o, {r: o});
 			case EUntyped(e): expr(e);
 			case EConst(c):
 				switch(c) {
@@ -407,6 +399,17 @@ class Interp {
 				return a;
 			case EArray(e,index):
 				return expr(e)[expr(index)];
+			case ENew(cl, params) if(classes.exists(cl)):
+				var c = classes.get(cl);
+				var v:Dynamic = {};
+				declared.push({n: "this", old: locals.get("this")});
+				locals.set("this", {r: v});
+				for(f in c.fields.keys()) {
+					var vf = c.fields.get(f);
+					if(!vf.access.has(Static) && vf.expr != null)
+						Reflect.setField(v, f, expr(vf.expr));
+				}
+				return v;
 			case ENew(cl,params):
 				var a = new Array();
 				for(e in params)

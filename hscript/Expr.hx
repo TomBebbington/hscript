@@ -34,7 +34,23 @@ typedef Case = {
 	@:optional var guard:Expr;
 	@:optional var expr:Expr;
 }
+enum Access {
+	Public;
+	Private;
+	Static;
+	Function;
+}
+typedef Field = {
+	@:optional var type:CType;
+	@:optional var expr: Expr;
+	var access:haxe.EnumFlags<Access>;
+}
+typedef ClassDecl = {
+	var name:String;
+	var fields:Map<String, Field>;
+}
 enum ExprDef {
+	EClassDecl(c:ClassDecl);
 	EConst( c : Const );
 	EIdent( v : String );
 	EVars( vs: Array<Var>);
