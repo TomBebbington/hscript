@@ -104,18 +104,18 @@ class Interp {
 
 	function assign(e1:Expr, e2:Expr):Dynamic {
 		var v = expr(e2);
-		switch(e1) {
-		case EIdent(id):
-			var l = locals.get(id);
-			if(l == null)
-				variables.set(id,v)
-			else
-				l.r = v;
-		case EField(e,f):
-			v = set(expr(e),f,v);
-		case EArray(e,index):
-			expr(e)[expr(index)] = v;
-		default:throw Error.EInvalidOp("=");
+		switch(e1 ) {
+			case EIdent(id):
+				var l = locals.get(id);
+				if(l == null)
+					variables.set(id,v)
+				else
+					l.r = v;
+			case EField(e,f):
+				v = set(expr(e),f,v);
+			case EArray(e,index):
+				expr(e)[expr(index)] = v;
+			default:throw Error.EInvalidOp("=");
 		}
 		return v;
 	}
@@ -151,37 +151,38 @@ class Interp {
 	}
 
 	function increment(e:Expr, prefix:Bool, delta:Int):Dynamic {
-		switch(e) {
-		case EIdent(id):
-			var l = locals.get(id);
-			var v:Dynamic = (l == null) ? variables.get(id):l.r;
-			if(prefix) {
-				v += delta;
-				if(l == null) variables.set(id,v) else l.r = v;
-			} else
-				if(l == null) variables.set(id,v + delta) else l.r = v + delta;
-			return v;
-		case EField(e,f):
-			var obj = expr(e);
-			var v:Dynamic = get(obj,f);
-			if(prefix) {
-				v += delta;
-				set(obj,f,v);
-			} else
-				set(obj,f,v + delta);
-			return v;
-		case EArray(e,index):
-			var arr = expr(e);
-			var index = expr(index);
-			var v = arr[index];
-			if(prefix) {
-				v += delta;
-				arr[index] = v;
-			} else
-				arr[index] = v + delta;
-			return v;
-		default:
-			throw Error.EInvalidOp((delta > 0)?"++":"--");
+		var d:Expr  = e;
+		return switch(d) {
+			case EIdent(id):
+				var l = locals.get(id);
+				var v:Dynamic = (l == null) ? variables.get(id):l.r;
+				if(prefix) {
+					v += delta;
+					if(l == null) variables.set(id,v) else l.r = v;
+				} else
+					if(l == null) variables.set(id,v + delta) else l.r = v + delta;
+				v;
+			case EField(e,f):
+				var obj = expr(e);
+				var v:Dynamic = get(obj,f);
+				if(prefix) {
+					v += delta;
+					set(obj,f,v);
+				} else
+					set(obj,f,v + delta);
+				v;
+			case EArray(e,index):
+				var arr = expr(e);
+				var index = expr(index);
+				var v = arr[index];
+				if(prefix) {
+					v += delta;
+					arr[index] = v;
+				} else
+					arr[index] = v + delta;
+				v;
+			default:
+				throw Error.EInvalidOp((delta > 0)?"++":"--");
 		}
 	}
 
@@ -251,9 +252,11 @@ class Interp {
 				}
 			case EIdent(id):
 				return resolve(id);
-			case EVar(n,_,e):
-				declared.push({ n:n, old:locals.get(n) });
-				locals.set(n,{ r:(e == null)?null:expr(e) });
+			case EVars(vs):
+				for(v in vs) {
+					declared.push({ n:v.name, old:locals.get(v.name) });
+					locals.set(v.name,{ r:(v.expr == null)?null:expr(v.expr) });
+				}
 				return null;
 			case EParent(e):
 				return expr(e);
@@ -264,6 +267,8 @@ class Interp {
 					v = expr(e);
 				restore(old);
 				return v;
+			case EField(EIdent(ident), f) if(Type.resolveClass('$ident.$f') != null):
+				return resolve('$ident.$f');
 			case EField(e,f):
 				return get(expr(e),f);
 			case EBinop(op,e1,e2):
@@ -293,13 +298,13 @@ class Interp {
 				var args = new Array();
 				for(p in params)
 					args.push(expr(p));
-				switch(e) {
-				case EField(e,f):
-					var obj = expr(e);
-					if(obj == null) throw Error.EInvalidAccess(f);
-					return fcall(obj,f,args);
-				default:
-					return call(null,expr(e),args);
+				switch(e ) {
+					case EField(e,f):
+						var obj = expr(e);
+						if(obj == null) throw Error.EInvalidAccess(f);
+						return fcall(obj,f,args);
+					default:
+						return call(null,expr(e),args);
 				}
 			case EIf(econd,e1,e2):
 				return if(expr(econd) == true) expr(e1) else if(e2 == null) null else expr(e2);

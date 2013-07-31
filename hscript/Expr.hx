@@ -28,19 +28,16 @@ enum Const {
 	CInt( v : Int );
 	CFloat( f : Float );
 	CString( s : String );
-	#if !haxe3
-	CInt32( v : haxe.Int32 );
-	#end
 }
 typedef Case = {
 	var values:Array<Expr>;
 	@:optional var guard:Expr;
 	@:optional var expr:Expr;
 }
-enum Expr {
+enum ExprDef {
 	EConst( c : Const );
 	EIdent( v : String );
-	EVar( n : String, ?t : CType, ?e : Expr );
+	EVars( vs: Array<Var>);
 	EParent( e : Expr );
 	EBlock( e : Array<Expr> );
 	EField( e : Expr, f : String );
@@ -64,14 +61,17 @@ enum Expr {
 	ESwitch(e : Expr,cases : Array<Case>,edef : Null<Null<Expr>>);
 	EUntyped( e:Expr);
 }
-
 enum CType {
 	CTPath( path : Array<String>, ?params : Array<CType> );
 	CTFun( args : Array<CType>, ret : CType );
 	CTAnon( fields : Array<{ name : String, t : CType }> );
 	CTParent( t : CType );
 }
-
+typedef Var = {
+	var name: String;
+	@:optional var expr:Expr;
+	@:optional var type:CType;
+}
 enum Error {
 	EInvalidChar( c : Int );
 	EUnexpected( s : String );
@@ -83,7 +83,7 @@ enum Error {
 	EInvalidAccess( f : String );
 }
 
-class AtPos<T> {
+class AtPosData<T> {
 	public var _:T;
 	public var pmin : Int;
 	public var pmax : Int;
@@ -93,5 +93,5 @@ class AtPos<T> {
 		this.pmax = pmax;
 	}
 }
-
+typedef Expr = ExprDef;
 typedef ExprOf<T> = Expr;

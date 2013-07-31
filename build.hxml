@@ -1,5 +1,4 @@
--neko hscript.n
+-js test/hscript.js
 -main Test
 -dce no
--debug
--cmd neko hscript.n yes nope maybe
+-cp test

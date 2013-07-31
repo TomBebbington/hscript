@@ -9,16 +9,29 @@ import sys.net.*;
 		var e = new Exec();
 		for(a in args.keys())
 			e.variables.set(a, args.get(a));
-		return e.expr(new Parser().parseString(sys.io.File.getContent(file)));
+		return e.expr(new Parser().parseString(#if sys sys.io.File.getContent(file) #else haxe.Resource.getString(file) #end));
 	}
+	#if macro
 	static function script(field:Field, file:String):Void {
 		switch(field.kind) {
 			case FFun(f):
-				var arge:ExprOf<Map<String, Dynamic>> = f.args.length == 0 ? macro new Map<String, Dynamic>() : {expr: EArrayDecl([for(a in f.args) macro $v{a.name} => $i{a.name}]), pos: field.pos};
-				f.expr = macro hscript.Scripty.run($v{file}, $arge);
+				var arge:ExprOf<Map<String, Dynamic>> = if(f.args.length == 0)
+					macro new Map<String, Dynamic>()
+				else
+					{expr: EArrayDecl([for(a in f.args) macro $v{a.name} => $i{a.name}]), pos: field.pos};
+				f.expr = if(Context.defined("embed-script")) {
+					var p = new Parser();
+					var e = p.parseString(sys.io.File.getContent(file));
+					new hscript.Macro(field.pos).convert(e);
+				} else {
+					if(!Context.defined("sys"))
+						Context.addResource(file, sys.io.File.getBytes(file));
+					macro hscript.Scripty.run($v{file}, $arge);
+				}
 			default:
 		}
 	}
+	#end
 	public static macro function build():Array<Field> {
 		var fields = Context.getBuildFields();
 		for(f in fields)

@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+	<head>
+		<title>HScript Demo</title>
+		<script src="http://www.codemirror.net/lib/codemirror.js"></script>
+		<link rel="stylesheet" href="http://www.codemirror.net/lib/codemirror.css">
+		<script src="http://www.codemirror.net/mode/haxe/haxe.js"></script>
+		<script src="hscript.js" type="text/javascript"></script>
+		<style>
+		#editor {
+			position: absolute;
+			left: 0px; top: 0px;
+			width: 60%;
+			height: 90%;
+		}
+		#outputarea {
+			position: absolute;
+			right: 0px; top: 0px;
+			margin: 0px;
+			width: 38%;
+			height: 100%;
+			background-color: #453;
+			color: white;
+		}
+		</style>
+	</head>
+	<body>
+		<textarea id = "editor" value = "trace('Hello, world!')"></textarea>
+		<div id = "outputarea">
+			<button id="run">Run</button>
+			<br>
+			<div id="output">Hello!</div>
+		</div>
+	</body>
+</html>

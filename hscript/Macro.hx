@@ -23,12 +23,9 @@
  * DAMAGE.
  */
 package hscript;
-import hscript.Expr.Error;
-#if hscriptPos
-import hscript.Expr.ErrorDef;
-#end
+import hscript.Expr;
 import haxe.macro.Expr;
-
+import Lambda.*;
 class Macro {
 
 	var p : Position;
@@ -96,19 +93,8 @@ class Macro {
 			unops.set(str, op);
 		}
 	}
-
-	#if !haxe3
-	function isType(v:String) {
-		var c0 = v.charCodeAt(0);
-		return c0 >= 'A'.code && c0 <= 'Z'.code;
-	}
-	#end
-
-	function map < T, R > ( a : Array<T>, f : T -> R ) : Array<R> {
-		var b = new Array();
-		for( x in a )
-			b.push(f(x));
-		return b;
+	static inline function map<T, R>(a : Array<T>, f:T -> R) : Array<R> {
+		return [for(i in a) f(i)];
 	}
 
 	function convertType( t : Expr.CType ) : ComplexType {
@@ -136,36 +122,23 @@ class Macro {
 	}
 
 	public function convert( e : hscript.Expr ) : Expr {
-		return { expr : switch( #if hscriptPos e.e #else e #end ) {
+		return { expr : switch( e  ) {
 			case EConst(c):
 				EConst(switch(c) {
 					case CInt(v): CInt(Std.string(v));
 					case CFloat(f): CFloat(Std.string(f));
 					case CString(s): CString(s);
-					#if !haxe3
-					case CInt32(v): CInt(Std.string(v));
-					#end
 				});
 			case EIdent(v):
-				#if !haxe3
-				if( isType(v) )
-					EConst(CType(v));
-				else
-				#end
-					EConst(CIdent(v));
+				EConst(CIdent(v));
 			case EVar(n, t, e):
-				EVars([ { name : n, expr : if( e == null ) null else convert(e), type : if( t == null ) null else convertType(t) } ]);
+				EVars([ { name : n, expr : if( e == null ) null else convert(e), type : if( t == null ) macro:Dynamic else convertType(t) } ]);
 			case EParent(e):
 				EParenthesis(convert(e));
 			case EBlock(el):
 				EBlock(map(el,convert));
 			case EField(e, f):
-				#if !haxe3
-				if( isType(f) )
-					EType(convert(e), f);
-				else
-				#end
-					EField(convert(e), f);
+				EField(convert(e), f);
 			case EBinop(op, e1, e2):
 				var b = binops.get(op);
 				if( b == null ) throw EInvalidOp(op);
@@ -180,14 +153,9 @@ class Macro {
 				EIf(convert(c), convert(e1), e2 == null ? null : convert(e2));
 			case EWhile(c, e):
 				EWhile(convert(c), convert(e), true);
-			#if (haxe_211 || haxe3)
 			case EFor(v, it, efor):
-				var p = #if hscriptPos { file : p.file, min : e.pmin, max : e.pmax } #else p #end;
+				var p:haxe.macro.Position = cast p ;
 				EFor({ expr : EIn({ expr : EConst(CIdent(v)), pos : p },convert(it)), pos : p }, convert(efor));
-			#else
-			case EFor(v, it, e):
-				EFor(v, convert(it), convert(e));
-			#end
 			case EBreak:
 				EBreak;
 			case EContinue:
@@ -227,7 +195,11 @@ class Macro {
 				EObjectDecl(tf);
 			case ETernary(cond, e1, e2):
 				ETernary(convert(cond), convert(e1), convert(e2));
-		}, pos : #if hscriptPos { file : p.file, min : e.pmin, max : e.pmax } #else p #end }
+			case EUntyped(e):
+				EUntyped(convert(e));
+			case ESwitch(e, cases, edef):
+				ESwitch(convert(e), [for(c in cases) {values: [for(v in c.values) convert(v)], guard: c.guard == null ? null : convert(c.guard), expr: c.expr == null ? null : convert(c.expr)}], edef == null ? null : convert(edef));
+		}, pos : p  }
 	}
 
 }

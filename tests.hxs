@@ -1,20 +1,32 @@
-function factorial(n) {
-	var x = 1;
-	for(i in 2...n)
-		x *= i;
-	return x;
+function measure(f, times:Int) {
+	var o = haxe.Timer.stamp();
+	for(i in 0...times)
+		f();
+	trace("Took "+(haxe.Timer.stamp() - o)+" seconds to run "+times+" tests");
 }
-trace(factorial(10));
 
-var Vector = {
-	new: function(x, y) {
+var Vector;
+Vector = {
+	create: function(x, y) {
 		return {x: x, y: y};
 	},
 	magnitude: function(v) {
 		return Math.sqrt(v.x * v.x + v.y * v.y);
+	},
+	scalar: function(a, b) {
+		return {x: a.x * b.x, y: a.y * b.y};
+	},
+	random: function() {
+		return Vector.create(Math.random(), Math.random());
+	},
+	toString: function(o) {
+		return "( "+o.x+", "+o.y+" )";
 	}
 };
-
-var vector = Vector.new(0, 1);
-trace(Vector.magnitude(vector));
-trace(vector.x);
+var v = switch("Hello, world!") {
+	case all if(all.length > 4): 43.5;
+	case "Hello": 38;
+	default: 24;
+};
+trace(v);
+measure(function() Vector.scalar(Vector.random(), Vector.random()), 10000);
