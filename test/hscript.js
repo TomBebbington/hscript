@@ -442,6 +442,7 @@ Test.main = function(){
 	var source = null;
 	var output = null;
 	var txt = null;
+	haxe.Timer.stamp;
 	var clear = function(){
 		output.textContent = "";
 	};
@@ -691,6 +692,42 @@ haxe.Log.trace = function(v,infos){
 }
 haxe.Log.clear = function(){
 	js.Boot.__clear_trace();
+}
+haxe.Timer = function(time_ms){
+	var me = this;
+	this.id = setInterval(function(){
+		me.run();
+	},time_ms);
+};
+$hxClasses["haxe.Timer"] = haxe.Timer;
+haxe.Timer.__name__ = ["haxe","Timer"];
+haxe.Timer.delay = function(f,time_ms){
+	var t = new haxe.Timer(time_ms);
+	t.run = function(){
+		t.stop();
+		f();
+	};
+	return t;
+}
+haxe.Timer.measure = function(f,pos){
+	var t0 = haxe.Timer.stamp();
+	var r = f();
+	haxe.Log.trace(haxe.Timer.stamp() - t0 + "s",pos);
+	return r;
+}
+haxe.Timer.stamp = function(){
+	return new Date().getTime() / 1000;
+}
+haxe.Timer.prototype = {
+	run: function(){
+	}
+	,stop: function(){
+		if(this.id == null) return;
+		clearInterval(this.id);
+		this.id = null;
+	}
+	,id: null
+	,__class__: haxe.Timer
 }
 haxe.ds = {}
 haxe.ds.BalancedTree = function(){
@@ -4208,6 +4245,18 @@ hscript.Parser.prototype = {
 			return hscript.ExprDef.EContinue;
 		case "untyped":
 			return hscript.ExprDef.EUntyped(this.parseExpr());
+		case "import":
+			var cl = this.parseExpr();
+			var name;
+			switch(cl[1]) {
+			case 5:
+				var f = cl[3];
+				name = f;
+				break;
+			default:
+				name = null;
+			}
+			return hscript.ExprDef.EVars([{ name : name, expr : cl}]);
 		case "else":
 			return this.unexpected(hscript.Token.TId(id));
 		case "function":

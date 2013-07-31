@@ -6,6 +6,7 @@ class Test {
 	static function main():Void {
 		var run:ButtonElement = null, source:TextAreaElement = null, output:DivElement = null;
 		var txt:Dynamic = null;
+		haxe.Timer.stamp;
 		function clear()
 			output.textContent = "";
 		function runScript() {
