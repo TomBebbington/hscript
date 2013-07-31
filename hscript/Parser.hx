@@ -436,19 +436,20 @@ class Parser {
 				switch(tk) {
 					case TDoubleDot if(type == null):
 						type = parseType();
-						tk = null;
+						tk = token();
 					default:
 				}
-				if(tk == null)
-					expr = parseExpr();
-				else
-					switch(tk) {
-						case TOp("="):
-							expr = parseExpr();
-							tk = null;
-						case TSemicolon| TComma:
-						default: unexpected(tk);
-					}
+				switch(tk) {
+					case _ if(type != null):
+						push(tk);
+						expr = parseExpr();
+						tk = token();
+					case TOp("="):
+						expr = parseExpr();
+						tk = token();
+					case TSemicolon | TComma:
+					default: unexpected(tk);
+				}
 				{name: ident, type: type, expr: expr};
 			}];
 			push(tk);
@@ -525,8 +526,8 @@ class Parser {
 			var tk = token();
 			var name = null;
 			switch( tk ) {
-			case TId(id): name = id;
-			default: push(tk);
+				case TId(id): name = id;
+				default: push(tk);
 			}
 			ensure(TPOpen);
 			var args = new Array();
@@ -536,8 +537,8 @@ class Parser {
 				while( arg ) {
 					var name = null;
 					switch( tk ) {
-					case TId(id): name = id;
-					default: unexpected(tk);
+						case TId(id): name = id;
+						default: unexpected(tk);
 					}
 					tk = token();
 					var t = null;
@@ -661,89 +662,89 @@ class Parser {
 
 	function parseType() : CType {
 		var t = token();
-		switch( t ) {
-		case TId(v):
-			var path = [v];
-			while( true ) {
-				t = token();
-				if( t != TDot )
-					break;
-				t = token();
-				switch( t ) {
-					case TId(v):
-						path.push(v);
-					default:
-						unexpected(t);
-				}
-			}
-			var params = null;
-			switch( t ) {
-				case TOp(op):
-					if( op == "<" ) {
-						params = [];
-						while( true ) {
-							params.push(parseType());
-							t = token();
-							switch( t ) {
-							case TComma: continue;
-							case TOp(op): if( op ==	">" ) break;
-							default:
-							}
-							unexpected(t);
-						}
-					}
-				default:
-					push(t);
-			}
-			return parseTypeNext(CTPath(path, params));
-		case TPOpen:
-			var t = parseType();
-			ensure(TPClose);
-			return parseTypeNext(CTParent(t));
-		case TBrOpen:
-			var fields = [];
-			while( true ) {
-				t = token();
-				switch( t ) {
-				case TBrClose: break;
-				case TId(name):
-					ensure(TDoubleDot);
-					fields.push( { name : name, t : parseType() } );
+		switch(t) {
+			case TId(v):
+				var path = [v];
+				while( true ) {
+					t = token();
+					if( t != TDot )
+						break;
 					t = token();
 					switch( t ) {
-					case TComma:
-					case TBrClose: break;
-					default: unexpected(t);
+						case TId(v):
+							path.push(v);
+						default:
+							unexpected(t);
 					}
-				default:
-					unexpected(t);
 				}
-			}
-			return parseTypeNext(CTAnon(fields));
-		default:
-			return unexpected(t);
+				var params = null;
+				switch( t ) {
+					case TOp(op):
+						if( op == "<" ) {
+							params = [];
+							while( true ) {
+								params.push(parseType());
+								t = token();
+								switch( t ) {
+								case TComma: continue;
+								case TOp(op): if( op ==	">" ) break;
+								default:
+								}
+								unexpected(t);
+							}
+						}
+					default:
+						push(t);
+				}
+				return parseTypeNext(CTPath(path, params));
+			case TPOpen:
+				var t = parseType();
+				ensure(TPClose);
+				return parseTypeNext(CTParent(t));
+			case TBrOpen:
+				var fields = [];
+				while( true ) {
+					t = token();
+					switch( t ) {
+					case TBrClose: break;
+					case TId(name):
+						ensure(TDoubleDot);
+						fields.push( { name : name, t : parseType() } );
+						t = token();
+						switch( t ) {
+						case TComma:
+						case TBrClose: break;
+						default: unexpected(t);
+						}
+					default:
+						unexpected(t);
+					}
+				}
+				return parseTypeNext(CTAnon(fields));
+			default:
+				return unexpected(t);
 		}
 	}
 
 	function parseTypeNext( t : CType ) {
 		var tk = token();
-		switch( tk ) {
-		case TOp(op):
-			if( op != "->" ) {
+		switch(tk) {
+			case TOp(op):
+				if( op != "->" ) {
+					push(tk);
+					return t;
+				}
+			default:
 				push(tk);
 				return t;
 			}
-		default:
-			push(tk);
-			return t;
-		}
-		var t2 = parseType();
-		switch( t2 ) {
-		case CTFun(args, _):
-			args.unshift(t);
-			return t2;
-		default:
-			return CTFun([t], t2);
+			var t2 = parseType();
+			switch( t2 ) {
+			case CTFun(args, _):
+				args.unshift(t);
+				return t2;
+			default:
+				return CTFun([t], t2);
 		}
 	}
 

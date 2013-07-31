@@ -3912,18 +3912,22 @@ hscript.Parser.prototype = {
 				case 14:
 					if(type == null) {
 						type = $this.parseType();
-						tk = null;
+						tk = $this.token();
 					} else {
 					}
 					break;
 				default:
 				}
-				if(tk == null) expr = $this.parseExpr(); else switch(tk[1]) {
+				if(type != null) {
+					$this.tokens.add(tk);
+					expr = $this.parseExpr();
+					tk = $this.token();
+				} else switch(tk[1]) {
 				case 3:
 					switch(tk[2]) {
 					case "=":
 						expr = $this.parseExpr();
-						tk = null;
+						tk = $this.token();
 						break;
 					default:
 						$this.unexpected(tk);
