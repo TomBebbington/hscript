@@ -1,18 +1,20 @@
-trace("Hello, world!");
-trace(args);
-trace([for(a in args) a => null]);
-var x = 10;
-trace([while(x > -5) x--]);
-trace([while(x < 10) x => ++x]);
-var complex = [
-	"awesomeness" => [0, 3, 6]
-	"coolness" => Math.POSITIVE_INFINITY,
-	"some more" => [
-		"this" => "is so awesome"
-	]
-];
-var a = new Array<Int>();
-for(i in 0...100)
-	a.push(i * 2);
-trace(a);
-trace(complex.toString());
+function factorial(n) {
+	var x = 1;
+	for(i in 2...n)
+		x *= i;
+	return x;
+}
+trace(factorial(10));
+
+var Vector = {
+	new: function(x, y) {
+		return {x: x, y: y};
+	},
+	magnitude: function(v) {
+		return Math.sqrt(v.x * v.x + v.y * v.y);
+	}
+};
+
+var vector = Vector.new(0, 1);
+trace(Vector.magnitude(vector));
+trace(vector.x);
