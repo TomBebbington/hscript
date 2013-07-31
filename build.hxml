@@ -1,5 +1,5 @@
 -neko hscript.n
 -main Test
--dce full
+-dce no
 -debug
--cmd neko hscript.n
+-cmd neko hscript.n yes nope maybe

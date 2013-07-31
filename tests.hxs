@@ -1,2 +1,3 @@
 trace("Hello, world!");
 trace(args);
+trace([for(a in args) a => null]);

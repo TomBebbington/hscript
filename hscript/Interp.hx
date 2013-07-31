@@ -340,6 +340,29 @@ class Interp {
 					variables.set(name,f);
 				return f;
 			case EArrayDecl([EFor(v, it, e)]):
+				switch(e) {
+					case EBinop("=>", ekey, evalue):
+						var m:Map.IMap<Dynamic, Dynamic> = null;
+						declared.push({ n:v, old:locals.get(v) });
+						for(i in makeIterator(expr(it))) {
+							locals.set(v,{ r:i });
+							var key = expr(ekey);
+							var val = expr(evalue);
+							if(m != null)
+								m.set(key, val);
+							else {
+								m = if(Std.is(key, Int))
+									new haxe.ds.IntMap();
+								else if(Std.is(key, String))
+									new haxe.ds.StringMap();
+								else
+									new haxe.ds.ObjectMap();
+								m.set(key, val);
+							}
+						}
+						return m;
+					default:
+				}
 				return [for(i in makeIterator(expr(it))) {
 					locals.set(v, {r:i});
 					expr(e);
