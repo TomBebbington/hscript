@@ -1,3 +1,5 @@
 trace("Hello, world!");
 trace(args);
 trace([for(a in args) a => null]);
+var x = 10;
+trace([while(x > -5) x--]);

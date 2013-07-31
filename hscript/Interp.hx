@@ -339,6 +339,8 @@ class Interp {
 				if(name != null)
 					variables.set(name,f);
 				return f;
+			case EArrayDecl([EWhile(cond, ex)]):
+				return [while(expr(cond)) expr(ex)];
 			case EArrayDecl([EFor(v, it, e)]):
 				switch(e) {
 					case EBinop("=>", ekey, evalue):
