@@ -340,6 +340,24 @@ class Interp {
 					variables.set(name,f);
 				return f;
 			case EArrayDecl([EWhile(cond, ex)]):
+				switch(ex) {
+					case EBinop("=>", ekey, evalue):
+						var m:Map.IMap<Dynamic, Dynamic> = null;
+						while(expr(cond)) {
+							var key = expr(ekey);
+							var val = expr(evalue);
+							if(m == null)
+								m = if(Std.is(key, Int))
+									new haxe.ds.IntMap();
+								else if(Std.is(key, String))
+									new haxe.ds.StringMap();
+								else
+									new haxe.ds.ObjectMap();
+							m.set(key, val);
+						}
+						return m;
+					default:
+				}
 				return [while(expr(cond)) expr(ex)];
 			case EArrayDecl([EFor(v, it, e)]):
 				switch(e) {
@@ -350,17 +368,14 @@ class Interp {
 							locals.set(v,{ r:i });
 							var key = expr(ekey);
 							var val = expr(evalue);
-							if(m != null)
-								m.set(key, val);
-							else {
+							if(m == null)
 								m = if(Std.is(key, Int))
 									new haxe.ds.IntMap();
 								else if(Std.is(key, String))
 									new haxe.ds.StringMap();
 								else
 									new haxe.ds.ObjectMap();
-								m.set(key, val);
-							}
+							m.set(key, val);
 						}
 						return m;
 					default:

@@ -3,3 +3,4 @@ trace(args);
 trace([for(a in args) a => null]);
 var x = 10;
 trace([while(x > -5) x--]);
+trace([while(x < 10) x++ => x]);
