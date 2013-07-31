@@ -1968,9 +1968,6 @@ hscript.Interp = function(){
 };
 $hxClasses["hscript.Interp"] = hscript.Interp;
 hscript.Interp.__name__ = ["hscript","Interp"];
-hscript.Interp.selectMap = function(key){
-	if(js.Boot.__instanceof(key,String)) return new haxe.ds.StringMap(); else if(js.Boot.__instanceof(key,Int)) return new haxe.ds.IntMap(); else return new haxe.ds.ObjectMap();
-}
 hscript.Interp.prototype = {
 	cnew: function(cl,args){
 		var c = Type.resolveClass(cl);
@@ -2244,11 +2241,10 @@ hscript.Interp.prototype = {
 						case "=>":
 							var evalue = ex[4];
 							var ekey = ex[3];
-							var m = null;
+							var m = new haxe.ds.BalancedTree();
 							while(this.expr(cond)) {
 								var key = this.expr(ekey);
 								var val = this.expr(evalue);
-								if(m == null) m = hscript.Interp.selectMap(key);
 								m.set(key,val);
 							}
 							return m;
@@ -2270,7 +2266,7 @@ hscript.Interp.prototype = {
 						case "=>":
 							var evalue = e1[4];
 							var ekey = e1[3];
-							var m = null;
+							var m = new haxe.ds.BalancedTree();
 							this.declared.push({ n : v, old : this.locals.get(v)});
 							var $it1 = this.makeIterator(this.expr(it));
 							while( $it1.hasNext() ) {
@@ -2278,7 +2274,6 @@ hscript.Interp.prototype = {
 								this.locals.set(v,{ r : i});
 								var key = this.expr(ekey);
 								var val = this.expr(evalue);
-								if(m == null) m = hscript.Interp.selectMap(key);
 								m.set(key,val);
 							}
 							return m;
@@ -4246,17 +4241,40 @@ hscript.Parser.prototype = {
 		case "untyped":
 			return hscript.ExprDef.EUntyped(this.parseExpr());
 		case "import":
-			var cl = this.parseExpr();
+			var expr = this.parseExpr();
 			var name;
-			switch(cl[1]) {
+			switch(expr[1]) {
 			case 5:
-				var f = cl[3];
+				var f = expr[3];
 				name = f;
 				break;
 			default:
 				name = null;
 			}
-			return hscript.ExprDef.EVars([{ name : name, expr : cl}]);
+			var tk = this.token();
+			switch(tk[1]) {
+			case 2:
+				switch(tk[2]) {
+				case "in":
+					var _g = this.token();
+					var all = _g;
+					switch(_g[1]) {
+					case 2:
+						var id1 = _g[2];
+						name = id1;
+						break;
+					default:
+						name = this.unexpected(all);
+					}
+					break;
+				default:
+					this.tokens.add(tk);
+				}
+				break;
+			default:
+				this.tokens.add(tk);
+			}
+			return hscript.ExprDef.EVars([{ name : name, expr : expr}]);
 		case "else":
 			return this.unexpected(hscript.Token.TId(id));
 		case "function":

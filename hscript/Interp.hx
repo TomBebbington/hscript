@@ -342,12 +342,10 @@ class Interp {
 			case EArrayDecl([EWhile(cond, ex)]):
 				switch(ex) {
 					case EBinop("=>", ekey, evalue):
-						var m:Map.IMap<Dynamic, Dynamic> = null;
+						var m = new haxe.ds.BalancedTree<Dynamic, Dynamic>();
 						while(expr(cond)) {
 							var key = expr(ekey);
 							var val = expr(evalue);
-							if(m == null)
-								m = selectMap(key);
 							m.set(key, val);
 						}
 						return m;
@@ -357,14 +355,12 @@ class Interp {
 			case EArrayDecl([EFor(v, it, e)]):
 				switch(e) {
 					case EBinop("=>", ekey, evalue):
-						var m:Map.IMap<Dynamic, Dynamic> = null;
+						var m = new haxe.ds.BalancedTree<Dynamic, Dynamic>();
 						declared.push({ n:v, old:locals.get(v) });
 						for(i in makeIterator(expr(it))) {
 							locals.set(v,{ r:i });
 							var key = expr(ekey);
 							var val = expr(evalue);
-							if(m == null)
-								m = selectMap(key);
 							m.set(key, val);
 						}
 						return m;
@@ -497,11 +493,6 @@ class Interp {
 		
 		if(c == null && (v.hasNext == null || v.next == null)) throw Error.EInvalidIterator(v);
 		return v;
-	}
-	static function selectMap<K>(key:K):Map.IMap<K, Dynamic> {
-		return if(Std.is(key, String)) cast new haxe.ds.StringMap();
-		else if(Std.is(key, Int)) cast new haxe.ds.IntMap();
-		else new haxe.ds.ObjectMap();
 	}
 	function forLoop(n,it,e) {
 		var old = declared.length;

@@ -567,12 +567,21 @@ class Parser {
 			case "continue": mk(EContinue);
 			case "untyped": mk(EUntyped(parseExpr()));
 			case "import":
-				var cl = parseExpr();
-				var name = switch(cl) {
+				var expr = parseExpr();
+				var name = switch(expr) {
 					case EField(_, f): f;
 					default: null;
 				}
-				mk(EVars([{name: name, expr: cl}]));
+				var tk = token();
+				switch(tk) {
+					case TId("in"):
+						name = switch(token()) {
+							case TId(id): id;
+							case all: unexpected(all);
+						}
+					default: push(tk);
+				}
+				mk(EVars([{name: name, expr: expr}]));
 			case "else": unexpected(TId(id));
 			case "function":
 				var tk = token();
