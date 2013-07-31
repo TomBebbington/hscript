@@ -5,28 +5,12 @@ function measure(f, times:Int) {
 	trace("Took "+(haxe.Timer.stamp() - o)+" seconds to run "+times+" tests");
 }
 
-var Vector;
-Vector = {
-	create: function(x, y) {
-		return {x: x, y: y};
-	},
-	magnitude: function(v) {
-		return Math.sqrt(v.x * v.x + v.y * v.y);
-	},
-	scalar: function(a, b) {
-		return {x: a.x * b.x, y: a.y * b.y};
-	},
-	random: function() {
-		return Vector.create(Math.random(), Math.random());
-	},
-	toString: function(o) {
-		return "( "+o.x+", "+o.y+" )";
+class Vector {
+	public var x:Float;
+	public var y:Float;
+	public function new(x, y):Void {
+		this.x = x;
+		this.y = y;
 	}
-};
-var v = switch("Hello, world!") {
-	case all if(all.length > 4): 43.5;
-	case "Hello": 38;
-	default: 24;
-};
-trace(v);
-measure(function() Vector.scalar(Vector.random(), Vector.random()), 10000);
+}
+trace(new Vector(0, 0));

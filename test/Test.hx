@@ -10,7 +10,6 @@ class Test {
 			output.textContent = "";
 		function runScript() {
 			var content = txt.getValue();
-			untyped console.log(content);
 			clear();
 			content = '{$content}';
 			try {

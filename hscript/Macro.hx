@@ -123,6 +123,42 @@ class Macro {
 
 	public function convert( e : hscript.Expr ) : Expr {
 		return { expr : switch( e  ) {
+			case EClassDecl(cl):
+				var td:TypeDefinition = {
+					pos: this.p,
+					name: cl.name,
+					meta: [],
+					pack: [],
+					params: [],
+					isExtern: false,
+					kind: TypeDefKind.TDClass(),
+					fields: [for(fk in cl.fields.keys()) {
+						var f = cl.fields[fk];
+						var kind = null, access = [];
+						if(f.access.has(Public))
+							access.push(APublic);
+						if(f.access.has(Private))
+							access.push(APrivate);
+						if(f.access.has(Static))
+							access.push(AStatic);
+						if(f.access.has(Function)) {
+							switch(f.expr) {
+								case EFunction(args, exp, name, ret):
+									kind = FieldType.FFun({
+										ret: ret == null ? null : convertType(ret),
+										args: [for(a in args) {type: a.t == null ? null : convertType(a.t), name: a.name, opt: false}],
+										params: [],
+										expr: convert(exp)
+									});
+								default: throw "Invalid class"; 
+							}
+						} else
+							kind = FieldType.FVar(f.type == null ? null : convertType(f.type), f.expr == null ? null : convert(f.expr));
+						{pos: this.p, name:fk, kind: kind, access: access};
+					}]
+				};
+				haxe.macro.Context.defineType(td);
+				EConst(CIdent("null"));
 			case EConst(c):
 				EConst(switch(c) {
 					case CInt(v): CInt(Std.string(v));
@@ -131,8 +167,8 @@ class Macro {
 				});
 			case EIdent(v):
 				EConst(CIdent(v));
-			case EVar(n, t, e):
-				EVars([ { name : n, expr : if( e == null ) null else convert(e), type : if( t == null ) macro:Dynamic else convertType(t) } ]);
+			case EVars(vs):
+				EVars([for(v in vs) {name: v.name, expr: v.expr == null ? null : convert(v.expr), type: v.type == null ? null : convertType(v.type)}]);
 			case EParent(e):
 				EParenthesis(convert(e));
 			case EBlock(el):

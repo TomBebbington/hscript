@@ -249,6 +249,8 @@ class Parser {
 
 	function parseFullExpr() {
 		var e = parseExpr();
+		if(e.getName() == "EClassDecl")
+			return e;
 		var tk = token();
 		if( tk != TSemicolon && tk != TEof ) {
 			if( isBlock(e) )
@@ -438,7 +440,6 @@ class Parser {
 									case EFunction(_, _, nam, _): name = nam;
 									default:
 								};
-								trace(field);
 							case TOp("="): field.expr = parseExpr();
 							case TSemicolon: break;
 							default: unexpected(tk);

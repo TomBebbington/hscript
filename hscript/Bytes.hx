@@ -94,7 +94,45 @@ class Bytes {
 			doEncodeString(s);
 		}
 	}
-
+	function doEncodeType(t:CType) {
+		var ind = t.getIndex();
+		bout.addByte(ind);
+		switch(t) {
+			case CTParent(t):
+				doEncodeType(t);
+			case CTPath(path, params):
+				bout.addByte(path.length);
+				for(p in path)
+					doEncodeString(p);
+				bout.addByte(params == null ? 0 : params.length);
+				if(params != null)
+					for(p in params)
+						doEncodeType(p);
+			case CTFun(args, ret):
+				bout.addByte(args.length);
+				for(a in args) doEncodeType(a);
+				doEncodeType(ret);
+			case CTAnon(fields):
+				bout.addByte(fields.length);
+				for(f in fields) {
+					doEncodeString(f.name);
+					doEncodeType(f.t);
+				}
+		}
+	}
+	function doDecodeType():CType {
+		return switch(bin.get(pin++)) {
+			case 0:
+				var pathLen = bin.get(pin++);
+				var path = [for(i in 0...pathLen) doDecodeString()];
+				var paramLen = bin.get(pin++);
+				var params = [for(i in 0...paramLen) doDecodeType()];
+				CType.CTPath(path, params);
+			case 255: null;
+			case all:
+				throw "Invalid code "+all + " AKA " + Type.getEnumConstructs(CType)[all];
+		}
+	}
 	function doDecodeConst() {
 		return switch( bin.get(pin++) ) {
 			case 0:
@@ -107,24 +145,42 @@ class Bytes {
 				CFloat( Std.parseFloat(doDecodeString()) );
 			case 3:
 				CString( doDecodeString() );
-			default:
-				throw "Invalid code "+bin.get(pin-1);
-		}
+			default: throw null;
+		};
 	}
 
 	function doEncode( e : Expr ) {
 		bout.addByte(Type.enumIndex(e));
 		switch( e ) {
+			case EClassDecl(c):
+				doEncodeString(c.name);
+				for(fn in c.fields.keys()) {
+					var f = c.fields.get(fn);
+					doEncodeString(fn);
+					if(f.expr == null)
+						bout.addByte(255)
+					else
+						doEncode(f.expr);
+					if(f.type == null)
+						bout.addByte(255)
+					else
+						doEncodeType(f.type);
+					bout.addByte(f.access.toInt());
+				}
+				doEncodeString("");
 			case EConst(c):
 				doEncodeConst(c);
 			case EIdent(v):
 				doEncodeString(v);
-			case EVar(n,_,e):
-				doEncodeString(n);
-				if( e == null )
-					bout.addByte(255);
-				else
-					doEncode(e);
+			case EVars(vs):
+				bout.addByte(vs.length);
+				for(v in vs) {
+					doEncodeString(v.name);
+					if(v.expr == null )
+						bout.addByte(255);
+					else
+						doEncode(v.expr);
+				}
 			case EParent(e):
 				doEncode(e);
 			case EBlock(el):
@@ -234,8 +290,12 @@ class Bytes {
 			case 1:
 				EIdent( doDecodeString() );
 			case 2:
-				var v = doDecodeString();
-				EVar(v,doDecode());
+				var len = bin.get(pin++);
+				EVars([for(i in 0...len) {
+					var name = doDecodeString();
+					var expr = doDecode();
+					{name: name, expr: expr};
+				}]);
 			case 3:
 				EParent(doDecode());
 			case 4:
@@ -329,6 +389,17 @@ class Bytes {
 				ESwitch(e, cases, edef);
 			case 24:
 				EUntyped(doDecode());
+			case 25:
+				var name = doDecodeString();
+				var fields = new Map();
+				var fn:String = "";
+				fields = [while((fn = doDecodeString()).length > 0) fn => {
+					var expr = doDecode();
+					var type = doDecodeType();
+					var access = bin.get(pin++);
+					{expr: expr, access: new haxe.EnumFlags(access), type: type};
+				}];
+				EClassDecl({name: name, fields: fields});
 			case 255:
 				null;
 			default:
