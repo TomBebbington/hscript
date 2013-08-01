@@ -459,7 +459,8 @@ class Parser {
 								push(tk);
 								field.expr = parseExpr();
 								switch(field.expr) {
-									case EFunction(_, _, n, _): name = n;
+									case EFunction(a, b, n, c): name = n;
+										field.expr = EFunction(a, b, null, c);
 									case all: trace(all);
 								};
 							case TOp("="): field.expr = parseExpr();

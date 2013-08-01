@@ -50,8 +50,6 @@ typedef ClassDecl = {
 	var fields:Map<String, Field>;
 }
 enum ExprDef {
-	EUsing(e:Expr);
-	EMacro( n:String, args:Array<String> );
 	EConst( c : Const );
 	EIdent( v : String );
 	EVars( vs: Array<Var>);
@@ -78,6 +76,8 @@ enum ExprDef {
 	ESwitch(e : Expr,cases : Array<Case>,edef : Null<Null<Expr>>);
 	EUntyped( e:Expr);
 	EClassDecl(c:ClassDecl);
+	EMacro( n:String, args:Array<String> );
+	EUsing(e:Expr);
 }
 enum CType {
 	CTPath( path : Array<String>, ?params : Array<CType> );

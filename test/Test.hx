@@ -15,6 +15,7 @@ class Test {
 			content = '{$content}';
 			#if !debug try { #end
 				var e = new Parser().parseString(content);
+				e = Bytes.decode(Bytes.encode(e));
 				var v:Dynamic = new Exec().expr(e);
 				if(v != null)
 					print('Returned $v');

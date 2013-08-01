@@ -152,22 +152,6 @@ class Bytes {
 	function doEncode( e : Expr ) {
 		bout.addByte(Type.enumIndex(e));
 		switch( e ) {
-			case EClassDecl(c):
-				doEncodeString(c.name);
-				for(fn in c.fields.keys()) {
-					var f = c.fields.get(fn);
-					doEncodeString(fn);
-					if(f.expr == null)
-						bout.addByte(255)
-					else
-						doEncode(f.expr);
-					if(f.type == null)
-						bout.addByte(255)
-					else
-						doEncodeType(f.type);
-					bout.addByte(f.access.toInt());
-				}
-				doEncodeString("");
 			case EConst(c):
 				doEncodeConst(c);
 			case EIdent(v):
@@ -280,6 +264,28 @@ class Bytes {
 				if(def != null) doEncode(def);
 			case EUntyped(e):
 				doEncode(e);
+			case EClassDecl(c):
+				doEncodeString(c.name);
+				for(fn in c.fields.keys()) {
+					var f = c.fields.get(fn);
+					doEncodeString(fn);
+					if(f.expr == null)
+						bout.addByte(255)
+					else
+						doEncode(f.expr);
+					if(f.type == null)
+						bout.addByte(255)
+					else
+						doEncodeType(f.type);
+					bout.addByte(f.access.toInt());
+				}
+				doEncodeString("");
+			case EMacro(name, args):
+				doEncodeString(name);
+				bout.addByte(args.length);
+				for(a in args) doEncodeString(a);
+			case EUsing(o):
+				doEncode(o);
 		}
 	}
 
@@ -400,6 +406,13 @@ class Bytes {
 					{expr: expr, access: new haxe.EnumFlags(access), type: type};
 				}];
 				EClassDecl({name: name, fields: fields});
+			case 26:
+				var name = doDecodeString();
+				var len = bin.get(pin++);
+				var args = [for(i in 0...len) doDecodeString()];
+				EMacro(name, args);
+			case 27:
+				EUsing(doDecode());
 			case 255:
 				null;
 			default:
