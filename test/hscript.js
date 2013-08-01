@@ -1909,38 +1909,39 @@ hscript.Access.Static.__enum__ = hscript.Access;
 hscript.Access.Function = ["Function",3];
 hscript.Access.Function.toString = $estr;
 hscript.Access.Function.__enum__ = hscript.Access;
-hscript.ExprDef = $hxClasses["hscript.ExprDef"] = { __ename__ : ["hscript","ExprDef"], __constructs__ : ["EMacro","EConst","EIdent","EVars","EParent","EBlock","EField","EBinop","EUnop","ECall","EIf","EWhile","EFor","EBreak","EContinue","EFunction","EReturn","EArray","EArrayDecl","ENew","EThrow","ETry","EObject","ETernary","ESwitch","EUntyped","EClassDecl"] }
-hscript.ExprDef.EMacro = function(n,args) { var $x = ["EMacro",0,n,args]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
-hscript.ExprDef.EConst = function(c) { var $x = ["EConst",1,c]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
-hscript.ExprDef.EIdent = function(v) { var $x = ["EIdent",2,v]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
-hscript.ExprDef.EVars = function(vs) { var $x = ["EVars",3,vs]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
-hscript.ExprDef.EParent = function(e) { var $x = ["EParent",4,e]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
-hscript.ExprDef.EBlock = function(e) { var $x = ["EBlock",5,e]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
-hscript.ExprDef.EField = function(e,f) { var $x = ["EField",6,e,f]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
-hscript.ExprDef.EBinop = function(op,e1,e2) { var $x = ["EBinop",7,op,e1,e2]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
-hscript.ExprDef.EUnop = function(op,prefix,e) { var $x = ["EUnop",8,op,prefix,e]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
-hscript.ExprDef.ECall = function(e,params) { var $x = ["ECall",9,e,params]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
-hscript.ExprDef.EIf = function(cond,e1,e2) { var $x = ["EIf",10,cond,e1,e2]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
-hscript.ExprDef.EWhile = function(cond,e) { var $x = ["EWhile",11,cond,e]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
-hscript.ExprDef.EFor = function(v,it,e) { var $x = ["EFor",12,v,it,e]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
-hscript.ExprDef.EBreak = ["EBreak",13];
+hscript.ExprDef = $hxClasses["hscript.ExprDef"] = { __ename__ : ["hscript","ExprDef"], __constructs__ : ["EUsing","EMacro","EConst","EIdent","EVars","EParent","EBlock","EField","EBinop","EUnop","ECall","EIf","EWhile","EFor","EBreak","EContinue","EFunction","EReturn","EArray","EArrayDecl","ENew","EThrow","ETry","EObject","ETernary","ESwitch","EUntyped","EClassDecl"] }
+hscript.ExprDef.EUsing = function(e) { var $x = ["EUsing",0,e]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
+hscript.ExprDef.EMacro = function(n,args) { var $x = ["EMacro",1,n,args]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
+hscript.ExprDef.EConst = function(c) { var $x = ["EConst",2,c]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
+hscript.ExprDef.EIdent = function(v) { var $x = ["EIdent",3,v]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
+hscript.ExprDef.EVars = function(vs) { var $x = ["EVars",4,vs]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
+hscript.ExprDef.EParent = function(e) { var $x = ["EParent",5,e]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
+hscript.ExprDef.EBlock = function(e) { var $x = ["EBlock",6,e]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
+hscript.ExprDef.EField = function(e,f) { var $x = ["EField",7,e,f]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
+hscript.ExprDef.EBinop = function(op,e1,e2) { var $x = ["EBinop",8,op,e1,e2]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
+hscript.ExprDef.EUnop = function(op,prefix,e) { var $x = ["EUnop",9,op,prefix,e]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
+hscript.ExprDef.ECall = function(e,params) { var $x = ["ECall",10,e,params]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
+hscript.ExprDef.EIf = function(cond,e1,e2) { var $x = ["EIf",11,cond,e1,e2]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
+hscript.ExprDef.EWhile = function(cond,e) { var $x = ["EWhile",12,cond,e]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
+hscript.ExprDef.EFor = function(v,it,e) { var $x = ["EFor",13,v,it,e]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
+hscript.ExprDef.EBreak = ["EBreak",14];
 hscript.ExprDef.EBreak.toString = $estr;
 hscript.ExprDef.EBreak.__enum__ = hscript.ExprDef;
-hscript.ExprDef.EContinue = ["EContinue",14];
+hscript.ExprDef.EContinue = ["EContinue",15];
 hscript.ExprDef.EContinue.toString = $estr;
 hscript.ExprDef.EContinue.__enum__ = hscript.ExprDef;
-hscript.ExprDef.EFunction = function(args,e,name,ret) { var $x = ["EFunction",15,args,e,name,ret]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
-hscript.ExprDef.EReturn = function(e) { var $x = ["EReturn",16,e]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
-hscript.ExprDef.EArray = function(e,index) { var $x = ["EArray",17,e,index]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
-hscript.ExprDef.EArrayDecl = function(e) { var $x = ["EArrayDecl",18,e]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
-hscript.ExprDef.ENew = function(cl,params) { var $x = ["ENew",19,cl,params]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
-hscript.ExprDef.EThrow = function(e) { var $x = ["EThrow",20,e]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
-hscript.ExprDef.ETry = function(e,v,t,ecatch) { var $x = ["ETry",21,e,v,t,ecatch]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
-hscript.ExprDef.EObject = function(fl) { var $x = ["EObject",22,fl]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
-hscript.ExprDef.ETernary = function(cond,e1,e2) { var $x = ["ETernary",23,cond,e1,e2]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
-hscript.ExprDef.ESwitch = function(e,cases,edef) { var $x = ["ESwitch",24,e,cases,edef]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
-hscript.ExprDef.EUntyped = function(e) { var $x = ["EUntyped",25,e]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
-hscript.ExprDef.EClassDecl = function(c) { var $x = ["EClassDecl",26,c]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
+hscript.ExprDef.EFunction = function(args,e,name,ret) { var $x = ["EFunction",16,args,e,name,ret]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
+hscript.ExprDef.EReturn = function(e) { var $x = ["EReturn",17,e]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
+hscript.ExprDef.EArray = function(e,index) { var $x = ["EArray",18,e,index]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
+hscript.ExprDef.EArrayDecl = function(e) { var $x = ["EArrayDecl",19,e]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
+hscript.ExprDef.ENew = function(cl,params) { var $x = ["ENew",20,cl,params]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
+hscript.ExprDef.EThrow = function(e) { var $x = ["EThrow",21,e]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
+hscript.ExprDef.ETry = function(e,v,t,ecatch) { var $x = ["ETry",22,e,v,t,ecatch]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
+hscript.ExprDef.EObject = function(fl) { var $x = ["EObject",23,fl]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
+hscript.ExprDef.ETernary = function(cond,e1,e2) { var $x = ["ETernary",24,cond,e1,e2]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
+hscript.ExprDef.ESwitch = function(e,cases,edef) { var $x = ["ESwitch",25,e,cases,edef]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
+hscript.ExprDef.EUntyped = function(e) { var $x = ["EUntyped",26,e]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
+hscript.ExprDef.EClassDecl = function(c) { var $x = ["EClassDecl",27,c]; $x.__enum__ = hscript.ExprDef; $x.toString = $estr; return $x; }
 hscript.CType = $hxClasses["hscript.CType"] = { __ename__ : ["hscript","CType"], __constructs__ : ["CTPath","CTFun","CTAnon","CTParent"] }
 hscript.CType.CTPath = function(path,params) { var $x = ["CTPath",0,path,params]; $x.__enum__ = hscript.CType; $x.toString = $estr; return $x; }
 hscript.CType.CTFun = function(args,ret) { var $x = ["CTFun",1,args,ret]; $x.__enum__ = hscript.CType; $x.toString = $estr; return $x; }
@@ -1986,7 +1987,7 @@ hscript.Interp = function(){
 	this.variables = new haxe.ds.StringMap();
 	this.classes = new haxe.ds.StringMap();
 	this.declared = new Array();
-	this.flags = new haxe.ds.StringMap();
+	this.usings = new haxe.ds.StringMap();
 	this.variables.set("null",null);
 	this.variables.set("true",true);
 	this.variables.set("false",false);
@@ -2078,11 +2079,23 @@ hscript.Interp.prototype = {
 	,expr: function(e){
 		switch(e[1]) {
 		case 0:
+			var e1 = e[2];
+			var v = this.expr(e1);
+			var _g = 0;
+			var _g1 = Reflect.fields(v);
+			while(_g < _g1.length) {
+				var f = _g1[_g];
+				++_g;
+				var value = Reflect.field(v,f);
+				this.usings.set(f,value);
+			}
+			break;
+		case 1:
 			var args = e[3];
 			var n = e[2];
-			haxe.Log.trace("" + n + ":" + Std.string(args),{ fileName : "Interp.hx", lineNumber : 238, className : "hscript.Interp", methodName : "expr"});
+			haxe.Log.trace("" + n + ":" + Std.string(args),{ fileName : "Interp.hx", lineNumber : 240, className : "hscript.Interp", methodName : "expr"});
 			break;
-		case 26:
+		case 27:
 			var c = e[2];
 			this.classes.set(c.name,c);
 			var o = { };
@@ -2094,11 +2107,11 @@ hscript.Interp.prototype = {
 			this.declared.push({ n : c.name, old : this.locals.get(c.name)});
 			this.locals.set(c.name,{ r : o});
 			break;
-		case 25:
+		case 26:
 			var e1 = e[2];
 			this.expr(e1);
 			break;
-		case 1:
+		case 2:
 			var c = e[2];
 			switch(c[1]) {
 			case 0:
@@ -2112,10 +2125,10 @@ hscript.Interp.prototype = {
 				return s;
 			}
 			break;
-		case 2:
+		case 3:
 			var id = e[2];
 			return this.resolve(id);
-		case 3:
+		case 4:
 			var vs = e[2];
 			var _g = 0;
 			while(_g < vs.length) {
@@ -2125,10 +2138,10 @@ hscript.Interp.prototype = {
 				this.locals.set(v.name,{ r : v.expr == null?null:this.expr(v.expr)});
 			}
 			return null;
-		case 4:
+		case 5:
 			var e1 = e[2];
 			return this.expr(e1);
-		case 5:
+		case 6:
 			var exprs = e[2];
 			var old = this.declared.length;
 			var v = null;
@@ -2140,10 +2153,10 @@ hscript.Interp.prototype = {
 			}
 			this.restore(old);
 			return v;
-		case 6:
+		case 7:
 			var e1 = e[2];
 			switch(e[2][1]) {
-			case 2:
+			case 3:
 				var f = e[3];
 				var ident = e[2][2];
 				if(Type.resolveClass("" + ident + "." + f) != null) return this.resolve("" + ident + "." + f); else {
@@ -2156,14 +2169,14 @@ hscript.Interp.prototype = {
 				return this.get(this.expr(e1),f1);
 			}
 			break;
-		case 7:
+		case 8:
 			var e2 = e[4];
 			var e1 = e[3];
 			var op = e[2];
 			var fop = this.binops.get(op);
 			if(fop == null) throw hscript.Error.EInvalidOp(op);
 			return fop(e1,e2);
-		case 8:
+		case 9:
 			var e1 = e[4];
 			var prefix = e[3];
 			var op = e[2];
@@ -2182,55 +2195,83 @@ hscript.Interp.prototype = {
 				throw hscript.Error.EInvalidOp(op);
 			}
 			break;
-		case 9:
-			var params = e[3];
+		case 10:
 			var e1 = e[2];
-			var args = new Array();
-			var _g = 0;
-			while(_g < params.length) {
-				var p = params[_g];
-				++_g;
-				args.push(this.expr(p));
-			}
-			switch(e1[1]) {
-			case 6:
-				var f = e1[3];
-				var e2 = e1[2];
-				var obj = this.expr(e2);
-				if(obj == null) throw hscript.Error.EInvalidAccess(f);
-				return this.fcall(obj,f,args);
+			switch(e[2][1]) {
+			case 7:
+				var ps = e[3];
+				var f = e[2][3];
+				var e2 = e[2][2];
+				if(this.usings.exists(f)) return this.call(null,this.usings.get(f),[this.expr(e2)].concat(ps.map($bind(this,this.expr)))); else {
+					var params = e[3];
+					var args = new Array();
+					var _g = 0;
+					while(_g < params.length) {
+						var p = params[_g];
+						++_g;
+						args.push(this.expr(p));
+					}
+					switch(e1[1]) {
+					case 7:
+						var f1 = e1[3];
+						var e3 = e1[2];
+						var obj = this.expr(e3);
+						if(obj == null) throw hscript.Error.EInvalidAccess(f1);
+						return this.fcall(obj,f1,args);
+					default:
+						return this.call(null,this.expr(e1),args);
+					}
+				}
+				break;
 			default:
-				return this.call(null,this.expr(e1),args);
+				var params = e[3];
+				var args = new Array();
+				var _g = 0;
+				while(_g < params.length) {
+					var p = params[_g];
+					++_g;
+					args.push(this.expr(p));
+				}
+				switch(e1[1]) {
+				case 7:
+					var f1 = e1[3];
+					var e3 = e1[2];
+					var obj = this.expr(e3);
+					if(obj == null) throw hscript.Error.EInvalidAccess(f1);
+					return this.fcall(obj,f1,args);
+				default:
+					return this.call(null,this.expr(e1),args);
+				}
 			}
 			break;
-		case 10:
+		case 11:
 			var e2 = e[4];
 			var e1 = e[3];
 			var econd = e[2];
 			if(this.expr(econd) == true) return this.expr(e1); else if(e2 == null) return null; else return this.expr(e2);
 			break;
-		case 11:
+		case 12:
 			var e1 = e[3];
 			var econd = e[2];
 			this.whileLoop(econd,e1);
 			return null;
-		case 12:
+		case 13:
 			var e1 = e[4];
 			var it = e[3];
 			var v = e[2];
 			this.forLoop(v,it,e1);
 			return null;
-		case 13:
+		case 14:
 			throw hscript._Interp.Stop.SBreak;
 			break;
-		case 14:
+		case 15:
 			throw hscript._Interp.Stop.SContinue;
 			break;
-		case 16:
+		case 17:
 			var e1 = e[2];
 			throw hscript._Interp.Stop.SReturn(e1 == null?null:this.expr(e1));
 			break;
-		case 15:
+		case 16:
 			var name = e[4];
 			var fexpr = e[3];
 			var params1 = e[2];
@@ -2259,17 +2300,17 @@ hscript.Interp.prototype = {
 			var f1 = Reflect.makeVarArgs(f);
 			if(name != null) this.variables.set(name,f1);
 			return f1;
-		case 18:
+		case 19:
 			var map = e[2];
 			var arr = e[2];
 			switch(e[2].length) {
 			case 1:
 				switch(e[2][0][1]) {
-				case 11:
+				case 12:
 					var ex = e[2][0][3];
 					var cond = e[2][0][2];
 					switch(ex[1]) {
-					case 7:
+					case 8:
 						switch(ex[2]) {
 						case "=>":
 							var evalue = ex[4];
@@ -2289,12 +2330,12 @@ hscript.Interp.prototype = {
 					var _g = [];
 					while(this.expr(cond)) _g.push(this.expr(ex));
 					return _g;
-				case 12:
+				case 13:
 					var e1 = e[2][0][4];
 					var it = e[2][0][3];
 					var v = e[2][0][2];
 					switch(e1[1]) {
-					case 7:
+					case 8:
 						switch(e1[2]) {
 						case "=>":
 							var evalue = e1[4];
@@ -2334,7 +2375,7 @@ hscript.Interp.prototype = {
 						$r = (function($this) {
 							var $r;
 							switch(_g[1]) {
-							case 7:
+							case 8:
 								$r = (function($this) {
 									var $r;
 									switch(_g[2]) {
@@ -2360,7 +2401,7 @@ hscript.Interp.prototype = {
 							var item = map[_g];
 							++_g;
 							switch(item[1]) {
-							case 7:
+							case 8:
 								switch(item[2]) {
 								case "=>":
 									var b = item[4];
@@ -2397,7 +2438,7 @@ hscript.Interp.prototype = {
 					$r = (function($this) {
 						var $r;
 						switch(_g[1]) {
-						case 7:
+						case 8:
 							$r = (function($this) {
 								var $r;
 								switch(_g[2]) {
@@ -2423,7 +2464,7 @@ hscript.Interp.prototype = {
 						var item = map[_g];
 						++_g;
 						switch(item[1]) {
-						case 7:
+						case 8:
 							switch(item[2]) {
 							case "=>":
 								var b = item[4];
@@ -2453,11 +2494,11 @@ hscript.Interp.prototype = {
 				}
 			}
 			break;
-		case 17:
+		case 18:
 			var index = e[3];
 			var e1 = e[2];
 			return this.expr(e1)[this.expr(index)];
-		case 19:
+		case 20:
 			var params = e[3];
 			var cl = e[2];
 			if(this.classes.exists(cl)) {
@@ -2492,11 +2533,11 @@ hscript.Interp.prototype = {
 				return this.cnew(cl1,a);
 			}
 			break;
-		case 20:
+		case 21:
 			var e1 = e[2];
 			throw this.expr(e1);
 			break;
-		case 21:
+		case 22:
 			var ecatch = e[5];
 			var n = e[3];
 			var e1 = e[2];
@@ -2520,7 +2561,7 @@ hscript.Interp.prototype = {
 				}
 			}
 			break;
-		case 22:
+		case 23:
 			var fl = e[2];
 			var o = { };
 			var _g = 0;
@@ -2530,13 +2571,13 @@ hscript.Interp.prototype = {
 				this.set(o,f.name,this.expr(f.e));
 			}
 			return o;
-		case 23:
+		case 24:
 			var e2 = e[4];
 			var e1 = e[3];
 			var econd = e[2];
 			if(this.expr(econd) == true) return this.expr(e1); else return this.expr(e2);
 			break;
-		case 24:
+		case 25:
 			var edef = e[4];
 			var cases = e[3];
 			var ev = e[2];
@@ -2559,7 +2600,7 @@ hscript.Interp.prototype = {
 						var v = _g2[_g1];
 						++_g1;
 						switch(v[1]) {
-						case 2:
+						case 3:
 							switch(v[2]) {
 							case "all":case "_":
 								matched = true;
@@ -2592,13 +2633,12 @@ hscript.Interp.prototype = {
 		return null;
 	}
 	,resolve: function(id){
-		if(id == "__set__") return $bind(this,this.setVar);
 		var l = this.locals.get(id);
 		if(l != null) return l.r;
-		var vthis = this.locals.get("this");
-		if(vthis != null && vthis.r.id != null) return vthis.r.id;
 		var v = this.variables.get(id);
 		if(this.variables.exists(id)) return v;
+		var vthis = this.locals.get("this");
+		if(vthis != null && vthis.r.id != null) return vthis.r.id;
 		var c = Type.resolveClass(id);
 		if(c != null) return c;
 		throw hscript.Error.EUnknownVariable(id);
@@ -2648,7 +2688,7 @@ hscript.Interp.prototype = {
 	,increment: function(e,prefix,delta){
 		var d = e;
 		switch(d[1]) {
-		case 2:
+		case 3:
 			var id = d[2];
 			var l = this.locals.get(id);
 			var v;
@@ -2664,7 +2704,7 @@ hscript.Interp.prototype = {
 				this.variables.set(id,value);
 			} else l.r = v + delta;
 			return v;
-		case 6:
+		case 7:
 			var f = d[3];
 			var e1 = d[2];
 			var obj = this.expr(e1);
@@ -2674,7 +2714,7 @@ hscript.Interp.prototype = {
 				this.set(obj,f,v);
 			} else this.set(obj,f,v + delta);
 			return v;
-		case 17:
+		case 18:
 			var index = d[3];
 			var e1 = d[2];
 			var arr = this.expr(e1);
@@ -2692,20 +2732,20 @@ hscript.Interp.prototype = {
 	,evalAssignOp: function(op,fop,e1,e2){
 		var v;
 		switch(e1[1]) {
-		case 2:
+		case 3:
 			var id = e1[2];
 			var l = this.locals.get(id);
 			v = fop(this.expr(e1),this.expr(e2));
 			if(l == null) this.variables.set(id,v); else l.r = v;
 			break;
-		case 6:
+		case 7:
 			var f = e1[3];
 			var e = e1[2];
 			var obj = this.expr(e);
 			v = fop(this.get(obj,f),this.expr(e2));
 			v = this.set(obj,f,v);
 			break;
-		case 17:
+		case 18:
 			var index = e1[3];
 			var e = e1[2];
 			var arr = this.expr(e);
@@ -2727,17 +2767,17 @@ hscript.Interp.prototype = {
 	,assign: function(e1,e2){
 		var v = this.expr(e2);
 		switch(e1[1]) {
-		case 2:
+		case 3:
 			var id = e1[2];
 			var l = this.locals.get(id);
 			if(this.locals.exists("this") && Reflect.hasField(this.locals.get("this").r,id)) this.locals.get("this").r[id] = v; else if(l == null) this.variables.set(id,v); else l.r = v;
 			break;
-		case 6:
+		case 7:
 			var f = e1[3];
 			var e = e1[2];
 			v = this.set(this.expr(e),f,v);
 			break;
-		case 17:
+		case 18:
 			var index = e1[3];
 			var e = e1[2];
 			this.expr(e)[this.expr(index)] = v;
@@ -2846,7 +2886,7 @@ hscript.Interp.prototype = {
 		});
 	}
 	,declared: null
-	,flags: null
+	,usings: null
 	,classes: null
 	,binops: null
 	,locals: null
@@ -4048,7 +4088,7 @@ hscript.Parser.prototype = {
 				if(this.isBlock(e1) || (function($this) {
 					var $r;
 					switch(e1[1]) {
-					case 4:
+					case 5:
 						$r = true;
 						break;
 					default:
@@ -4146,7 +4186,7 @@ hscript.Parser.prototype = {
 							field.expr = this.parseExpr();
 							var all = field.expr;
 							switch(field.expr[1]) {
-							case 15:
+							case 16:
 								var n = field.expr[4];
 								name1 = n;
 								break;
@@ -4359,15 +4399,12 @@ hscript.Parser.prototype = {
 		case "untyped":
 			return hscript.ExprDef.EUntyped(this.parseExpr());
 		case "using":
-			var expr = this.parseExpr();
-			var fieldsExpr = hscript.ExprDef.ECall(hscript.ExprDef.EField(hscript.ExprDef.EIdent("Reflect"),"fields"),[expr]);
-			var innerExpr = hscript.ExprDef.ECall(hscript.ExprDef.EIdent("__set__"),[hscript.ExprDef.EIdent("f"),hscript.ExprDef.ECall(hscript.ExprDef.EField(hscript.ExprDef.EIdent("Reflect"),"field"),[expr,hscript.ExprDef.EIdent("f")])]);
-			return hscript.ExprDef.EFor("f",fieldsExpr,innerExpr);
+			return hscript.ExprDef.EUsing(this.parseExpr());
 		case "import":
 			var expr = this.parseExpr();
 			var name;
 			switch(expr[1]) {
-			case 6:
+			case 7:
 				var f = expr[3];
 				name = f;
 				break;
@@ -4537,13 +4574,13 @@ hscript.Parser.prototype = {
 	}
 	,makeBinop: function(op,e1,e){
 		switch(e[1]) {
-		case 7:
+		case 8:
 			var e3 = e[4];
 			var e2 = e[3];
 			var op2 = e[2];
 			if(this.opPriority.get(op) <= this.opPriority.get(op2) && !this.opRightAssoc.exists(op)) return hscript.ExprDef.EBinop(op2,this.makeBinop(op,e1,e2),e3); else return hscript.ExprDef.EBinop(op,e1,e);
 			break;
-		case 23:
+		case 24:
 			var e4 = e[4];
 			var e3 = e[3];
 			var e2 = e[2];
@@ -4555,12 +4592,12 @@ hscript.Parser.prototype = {
 	}
 	,makeUnop: function(op,e){
 		switch(e[1]) {
-		case 7:
+		case 8:
 			var e2 = e[4];
 			var e1 = e[3];
 			var bop = e[2];
 			return hscript.ExprDef.EBinop(bop,this.makeUnop(op,e1),e2);
-		case 23:
+		case 24:
 			var e3 = e[4];
 			var e2 = e[3];
 			var e1 = e[2];
@@ -4740,7 +4777,7 @@ hscript.Parser.prototype = {
 		if(tk != hscript.Token.TSemicolon && tk != hscript.Token.TEof) {
 			if(this.isBlock(e)) this.tokens.add(tk); else this.unexpected(tk);
 		} else switch(e[1]) {
-		case 0:
+		case 1:
 			this.tokens.add(tk);
 			break;
 		default:
@@ -4749,16 +4786,16 @@ hscript.Parser.prototype = {
 	}
 	,isBlock: function(e){
 		switch(e[1]) {
-		case 26:
+		case 27:
 			return true;
-		case 0:
+		case 1:
 			return true;
-		case 5:case 22:
+		case 6:case 23:
 			return true;
-		case 15:
+		case 16:
 			var e1 = e[3];
 			return this.isBlock(e1);
-		case 3:
+		case 4:
 			var vs = e[2];
 			switch(e[2].length) {
 			case 0:
@@ -4767,28 +4804,28 @@ hscript.Parser.prototype = {
 				return vs[0].expr != null && this.isBlock(vs[0].expr);
 			}
 			break;
-		case 10:
+		case 11:
 			var e2 = e[4];
 			var e1 = e[3];
 			if(e2 != null) return this.isBlock(e2); else return this.isBlock(e1);
 			break;
-		case 7:
+		case 8:
 			var e1 = e[4];
 			return this.isBlock(e1);
-		case 8:
+		case 9:
 			var e1 = e[4];
 			var prefix = e[3];
 			return !prefix && this.isBlock(e1);
-		case 11:
+		case 12:
 			var e1 = e[3];
 			return this.isBlock(e1);
-		case 12:
+		case 13:
 			var e1 = e[4];
 			return this.isBlock(e1);
-		case 16:
+		case 17:
 			var e1 = e[2];
 			return e1 != null && this.isBlock(e1);
-		case 24:
+		case 25:
 			return true;
 		default:
 			return false;

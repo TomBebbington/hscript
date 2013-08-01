@@ -36,7 +36,7 @@ class Interp {
 	var locals:Map<String,{ r:Dynamic }>;
 	var binops:Map<String, Expr -> Expr -> Dynamic >;
 	var classes:Map<String, ClassDecl>;
-	var flags:Map<String, Bool>;
+	var usings:Map<String, Dynamic>;
 	var declared:Array<{ n:String, old:{ r:Dynamic } }>;
 
 	public function new() {
@@ -44,7 +44,7 @@ class Interp {
 		variables = new Map<String,Dynamic>();
 		classes = new Map();
 		declared = new Array();
-		flags = new Map();
+		usings = new Map<String, Dynamic>();
 		variables.set("null",null);
 		variables.set("true",true);
 		variables.set("false",false);
@@ -216,17 +216,15 @@ class Interp {
 	function setVar(f:String, v:Dynamic)
 		variables.set(f, v);
 	function resolve(id:String):Dynamic {
-		if(id == "__set__")
-			return setVar;
 		var l = locals.get(id);
 		if(l != null)
 			return l.r;
-		var vthis = locals["this"];
-		if(vthis != null && vthis.r.id != null)
-			return vthis.r.id;
 		var v = variables.get(id);
 		if(variables.exists(id))
 			return v;
+		var vthis = locals["this"];
+		if(vthis != null && vthis.r.id != null)
+			return vthis.r.id;
 		var c = Type.resolveClass(id);
 		if(c != null)
 			return c;
@@ -234,6 +232,10 @@ class Interp {
 	}
 	public function expr(e:Expr):Dynamic {
 		switch(e) {
+			case EUsing(e):
+				var v = expr(e);
+				for(f in Reflect.fields(v))
+					usings.set(f, Reflect.field(v, f));
 			case EMacro(n, args):
 				trace('$n:$args');
 			case EClassDecl(c):
@@ -298,6 +300,8 @@ class Interp {
 				default:
 					throw Error.EInvalidOp(op);
 				}
+			case ECall(EField(e,f), ps) if(usings.exists(f)):
+				return call(null, usings.get(f), [expr(e)].concat(ps.map(expr)));
 			case ECall(e,params):
 				var args = new Array();
 				for(p in params)

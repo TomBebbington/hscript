@@ -50,6 +50,7 @@ typedef ClassDecl = {
 	var fields:Map<String, Field>;
 }
 enum ExprDef {
+	EUsing(e:Expr);
 	EMacro( n:String, args:Array<String> );
 	EConst( c : Const );
 	EIdent( v : String );

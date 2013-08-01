@@ -589,10 +589,7 @@ class Parser {
 			case "continue": mk(EContinue);
 			case "untyped": mk(EUntyped(parseExpr()));
 			case "using":
-				var expr = parseExpr();
-				var fieldsExpr = ECall(EField(EIdent("Reflect"), "fields"), [expr]);
-				var innerExpr = ECall(EIdent("__set__"), [EIdent("f"), ECall(EField(EIdent("Reflect"), "field"), [expr, EIdent("f")])]);
-				mk(EFor("f", fieldsExpr, innerExpr));
+				mk(EUsing(parseExpr()));
 			case "import":
 				var expr = parseExpr();
 				var name = switch(expr) {
