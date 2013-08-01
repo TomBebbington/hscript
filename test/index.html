@@ -10,26 +10,28 @@
 		#editor {
 			position: absolute;
 			left: 0px; top: 0px;
-			width: 60%;
-			height: 90%;
+			z-index: -1;
+			height: 1000px;
 		}
-		#outputarea {
+		#output {
+			border-top-left-radius: 10px;
+			border-top-right-radius: 10px;
+			border-top: 2px solid purple;
 			position: absolute;
-			right: 0px; top: 0px;
-			margin: 0px;
-			width: 38%;
-			height: 100%;
-			background-color: #453;
+			bottom: 0px;
+			left: 0px;
+			width: 100%;
+			height: 200px;
+			opacity: 0.8;
+			z-index: 1;
+			background-color: black;
 			color: white;
 		}
 		</style>
 	</head>
 	<body>
 		<textarea id = "editor" value = "trace('Hello, world!')"></textarea>
-		<div id = "outputarea">
-			<button id="run">Run</button>
-			<br>
-			<div id="output">Hello!</div>
+		<div id = "output">
 		</div>
 	</body>
 </html>

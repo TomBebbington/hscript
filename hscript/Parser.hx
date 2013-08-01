@@ -41,6 +41,8 @@ enum Token {
 	TBkClose;
 	TQuestion;
 	TDoubleDot;
+	THash;
+	TInterp(s:String);
 }
 
 class Parser {
@@ -125,8 +127,8 @@ class Parser {
 			unops.set(x, x == "++" || x == "--");
 	}
 
-	public inline function error( err:Error, pmin, pmax ) {
-		throw switch(err) {
+	public function error( err:Error, pmin:Int, pmax:Int ) {
+		var errs = switch(err) {
 			case EUnterminatedString: "String is not terminated. Did you forget to add a closing quote?";
 			case EUnterminatedComment: "Comment not terminated.";
 			case EUnknownVariable(v): 'Unknown variable "$v"';
@@ -137,6 +139,8 @@ class Parser {
 			case EInvalidChar(c): 'Invalid char "${String.fromCharCode(c)}"';
 			case EInvalidAccess(f): 'Cannot access $f';
 		};
+		var otherInfo = haxe.CallStack.toString(haxe.CallStack.exceptionStack());
+		throw '$errs at $pmin-$pmax\n$otherInfo';
 	}
 
 	public function invalidChar(c) {
@@ -232,6 +236,8 @@ class Parser {
 
 	function isBlock(e) {
 		return switch( expr(e) ) {
+			case EClassDecl(_): true;
+			case EMacro(_, _): true;
 			case EBlock(_), EObject(_): true;
 			case EFunction(_,e,_,_): isBlock(e);
 			case EVars([]): false;
@@ -249,14 +255,16 @@ class Parser {
 
 	function parseFullExpr() {
 		var e = parseExpr();
-		if(e.getName() == "EClassDecl")
-			return e;
 		var tk = token();
 		if( tk != TSemicolon && tk != TEof ) {
-			if( isBlock(e) )
+			if(isBlock(e))
 				push(tk);
 			else
 				unexpected(tk);
+		} else switch(e) {
+			case EMacro(_, _):
+				push(tk);
+			default:
 		}
 		return e;
 	}
@@ -294,14 +302,28 @@ class Parser {
 		}
 		return parseExprNext(mk(EObject(fl),p1));
 	}
-	static var INTERPOLATION = ~/\$([a-zA-Z0-9]+|\(.*?\))/g;
-	static var PARTER = ~/\$\{|\}/g;
 	function parseExpr() {
 		var tk = token();
 		#if hscriptPos
 		var p1 = tokenMin;
 		#end
 		switch( tk ) {
+		case TInterp(s):
+			var is = parseInterpolatedString(s);
+			return parseExprNext(is);
+		case THash:
+			var name = switch(token()) {
+				case TId(s): s;
+				default: null;
+			};
+			var args = switch(name) {
+				case "if" | "elseif": [switch(token()) {
+					case TId(s): s;
+					default: null;
+				}];
+				default: [];
+			};
+			return parseExprNext(mk(EMacro(name, args), p1, tokenMax));
 		case TId(id):
 			var e = parseStructure(id);
 			if( e == null )
@@ -437,8 +459,8 @@ class Parser {
 								push(tk);
 								field.expr = parseExpr();
 								switch(field.expr) {
-									case EFunction(_, _, nam, _): name = nam;
-									default:
+									case EFunction(_, _, n, _): name = n;
+									case all: trace(all);
 								};
 							case TOp("="): field.expr = parseExpr();
 							case TSemicolon: break;
@@ -446,7 +468,7 @@ class Parser {
 						}
 					}
 					if(name != null)
-						cd.fields[name] = field;
+						cd.fields.set(name, field);
 				};
 				mk(EClassDecl(cd), p1, tokenMax);
 			case "if":
@@ -635,16 +657,18 @@ class Parser {
 				var a = new Array();
 				var tk = token();
 				switch( tk ) {
-				case TId(id): a.push(id);
-				default: unexpected(tk);
+					case TId(id): a.push(id);
+					default: unexpected(tk);
 				}
 				var next = true, hasType = false;
-				while( next ) {
+				while(next) {
 					tk = token();
 					switch( tk ) {
-						case Token.TOp("<"):
+						case TOp("<"):
 							parseType();
 							hasType = true;
+						case TOp(">"):
+							hasType = false;
 						case TComma if(hasType):
 							parseType();
 						case TDot:
@@ -740,19 +764,17 @@ class Parser {
 				}
 				var params = null;
 				switch( t ) {
-					case TOp(op):
-						if( op == "<" ) {
-							params = [];
-							while( true ) {
-								params.push(parseType());
-								t = token();
-								switch( t ) {
+					case TOp("<"):
+						params = [];
+						while(true) {
+							params.push(parseType());
+							t = token();
+							switch( t ) {
 								case TComma: continue;
-								case TOp(op): if( op ==	">" ) break;
+								case TOp(">"): break;
 								default:
-								}
-								unexpected(t);
 							}
+							unexpected(t);
 						}
 					default:
 						push(t);
@@ -956,6 +978,7 @@ class Parser {
 				#if hscriptPos
 				tokenMin++;
 				#end
+			case "#".code: return THash;
 			case _ if(char >= 48 && char <= 57): // 0...9
 				var n = (char - 48) * 1.0;
 				var exp = 0.;
@@ -1057,8 +1080,7 @@ class Parser {
 			case 125: return TBrClose;
 			case 91: return TBkOpen;
 			case 93: return TBkClose;
-			case 39: 
-				return TConst(CString(readString(39)));
+			case 39: return TInterp(readString(39));
 			case 34: return TConst( CString(readString(34)) );
 			case 63: return TQuestion;
 			case 58: return TDoubleDot;
@@ -1145,6 +1167,7 @@ class Parser {
 
 	function tokenString( t ) {
 		return switch( t ) {
+			case THash: "#";
 			case TEof: "<eof>";
 			case TConst(c): constString(c);
 			case TId(s): s;
@@ -1160,7 +1183,69 @@ class Parser {
 			case TBkClose: "]";
 			case TQuestion: "?";
 			case TDoubleDot: ":";
+			case TInterp(s): "'"+s+"'";
 		}
 	}
-
+	function parseInterpolatedString(str:String):ExprOf<String> {
+		var expr = null;
+		function add(e)
+			if( expr == null )
+				expr = e;
+			else
+				expr = mk(EBinop("+",expr,e));
+		var i = 0, start = 0;
+		var max = str.length;
+		while( i < max ) {
+			if( StringTools.fastCodeAt(str,i++) != '$'.code )
+				continue;
+			var len = i - start - 1;
+			if( len > 0 || expr == null )
+				add(mk(EConst(CString(str.substr(start,len)))));
+			start = i;
+			var c = StringTools.fastCodeAt(str, i);
+			if( c == '{'.code ) {
+				var count = 1;
+				i++;
+				while( i < max ) {
+					var c = StringTools.fastCodeAt(str,i++);
+					if( c == "}".code ) {
+					if( --count == 0 ) break;
+					} else if( c == "{".code )
+					count++;
+				}
+				if( count > 0 )
+					throw "Closing brace not found";
+				start++;
+				var len = i - start - 1;
+				var expr:String = str.substr(start, len);
+				add(new Parser().parseString(expr));
+				start++;
+			} else if( (c >= 'a'.code && c <= 'z'.code) || (c >= 'A'.code && c <= 'Z'.code) || c == '_'.code ) {
+				i++;
+				while( true ) {
+					var c = StringTools.fastCodeAt(str, i);
+					if( (c >= 'a'.code && c <= 'z'.code) || (c >= 'A'.code && c <= 'Z'.code) || (c >= '0'.code && c <= '9'.code) || c == '_'.code )
+					i++;
+					else
+					break;
+				}
+				var len = i - start;
+				var ident = str.substr(start, len);
+				add(mk(EIdent(ident)));
+			} else if( c == '$'.code ) {
+				start = i++;
+				continue;
+			} else {
+				start = i - 1;
+				continue;
+			}
+			start = i;
+		}
+		var len = i - start;
+		if( len > 0 )
+			add(mk(EConst(CString(str.substr(start,len)))));
+		if( expr == null )
+			expr = mk(EConst(CString("")));
+		return expr;
+	}
 }

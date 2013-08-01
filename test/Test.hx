@@ -13,12 +13,12 @@ class Test {
 			var content = txt.getValue();
 			clear();
 			content = '{$content}';
-			try {
+			#if !debug try { #end
 				var e = new Parser().parseString(content);
 				var v:Dynamic = new Exec().expr(e);
 				if(v != null)
 					print('Returned $v');
-			} catch(e:Dynamic) print('Error: $e');
+			#if !debug } catch(e:Dynamic) print('Error: $e'); #end
 		}
 		//new haxe.Timer(30).run = runScript;
 		window.onload = function(_) {
@@ -26,9 +26,11 @@ class Test {
 			source = cast document.getElementById("editor");
 			output = cast document.getElementById("output");
 			txt = untyped __js__("CodeMirror.fromTextArea")(source, {
-				value: 'trace("Hello, world!");',
+				value: "trace(\"Hello, world!\");",
 				tabindex: 1,
-				autofocus: true
+				autofocus: true,
+				indentWithTabs: true,
+				lineNumbers: true
 			});
 			haxe.Log.trace = function(o:Dynamic, ?p:haxe.PosInfos) {
 				var s = Std.string(o);

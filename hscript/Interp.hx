@@ -36,6 +36,7 @@ class Interp {
 	var locals:Map<String,{ r:Dynamic }>;
 	var binops:Map<String, Expr -> Expr -> Dynamic >;
 	var classes:Map<String, ClassDecl>;
+	var flags:Map<String, Bool>;
 	var declared:Array<{ n:String, old:{ r:Dynamic } }>;
 
 	public function new() {
@@ -43,6 +44,7 @@ class Interp {
 		variables = new Map<String,Dynamic>();
 		classes = new Map();
 		declared = new Array();
+		flags = new Map();
 		variables.set("null",null);
 		variables.set("true",true);
 		variables.set("false",false);
@@ -96,7 +98,9 @@ class Interp {
 		switch(e1 ) {
 			case EIdent(id):
 				var l = locals.get(id);
-				if(l == null)
+				if(locals.exists("this") && Reflect.hasField(locals["this"].r, id))
+					Reflect.setField(locals["this"].r, id, v);
+				else if(l == null)
 					variables.set(id,v)
 				else
 					l.r = v;
@@ -214,6 +218,9 @@ class Interp {
 		var l = locals.get(id);
 		if(l != null)
 			return l.r;
+		var vthis = locals["this"];
+		if(vthis != null && vthis.r.id != null)
+			return vthis.r.id;
 		var v = variables.get(id);
 		if(variables.exists(id))
 			return v;
@@ -224,6 +231,8 @@ class Interp {
 	}
 	public function expr(e:Expr):Dynamic {
 		switch(e) {
+			case EMacro(n, args):
+				trace('$n:$args');
 			case EClassDecl(c):
 				classes.set(c.name, c);
 				var o:Dynamic = {};
@@ -231,7 +240,7 @@ class Interp {
 					if(c.fields[fn].access.has(Static))
 						Reflect.setField(o, fn, expr(c.fields[fn].expr));
 				declared.push({n: c.name, old: locals[c.name]});
-				locals.set(o, {r: o});
+				locals.set(c.name, {r: o});
 			case EUntyped(e): expr(e);
 			case EConst(c):
 				switch(c) {
@@ -400,10 +409,17 @@ class Interp {
 				var v:Dynamic = {};
 				declared.push({n: "this", old: locals.get("this")});
 				locals.set("this", {r: v});
+				var fnew:Field = null;
 				for(f in c.fields.keys()) {
 					var vf = c.fields.get(f);
-					if(!vf.access.has(Static) && vf.expr != null)
-						Reflect.setField(v, f, expr(vf.expr));
+					if(f == "new")
+						fnew = vf;
+					else if(!vf.access.has(Static))
+						Reflect.setField(v, f, vf.expr == null ? null : expr(vf.expr));
+				}
+				if(fnew != null) {
+					var _new = expr(fnew.expr);
+					call(v, _new, params.map(expr));
 				}
 				return v;
 			case ENew(cl,params):
