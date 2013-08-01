@@ -213,8 +213,11 @@ class Interp {
 			locals.set(d.n,d.old);
 		}
 	}
-	
+	function setVar(f:String, v:Dynamic)
+		variables.set(f, v);
 	function resolve(id:String):Dynamic {
+		if(id == "__set__")
+			return setVar;
 		var l = locals.get(id);
 		if(l != null)
 			return l.r;
@@ -504,7 +507,7 @@ class Interp {
 	}
 
 	function makeIterator(v:Dynamic):Iterator<Dynamic> {
-		if(v.iterator != null) v = v.iterator();
+		if(v.iterator != null || Std.is(v, Array)) v = v.iterator();
 		var c = Type.getClass(v);
 		
 		if(c == null && (v.hasNext == null || v.next == null)) throw Error.EInvalidIterator(v);

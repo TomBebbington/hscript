@@ -2048,7 +2048,7 @@ hscript.Interp.prototype = {
 		this.restore(old);
 	}
 	,makeIterator: function(v){
-		if(v.iterator != null) v = $iterator(v)();
+		if(v.iterator != null || js.Boot.__instanceof(v,Array)) v = $iterator(v)();
 		var c = Type.getClass(v);
 		if(c == null && (v.hasNext == null || v.next == null)) throw hscript.Error.EInvalidIterator(v);
 		return v;
@@ -2080,7 +2080,7 @@ hscript.Interp.prototype = {
 		case 0:
 			var args = e[3];
 			var n = e[2];
-			haxe.Log.trace("" + n + ":" + Std.string(args),{ fileName : "Interp.hx", lineNumber : 235, className : "hscript.Interp", methodName : "expr"});
+			haxe.Log.trace("" + n + ":" + Std.string(args),{ fileName : "Interp.hx", lineNumber : 238, className : "hscript.Interp", methodName : "expr"});
 			break;
 		case 26:
 			var c = e[2];
@@ -2592,6 +2592,7 @@ hscript.Interp.prototype = {
 		return null;
 	}
 	,resolve: function(id){
+		if(id == "__set__") return $bind(this,this.setVar);
 		var l = this.locals.get(id);
 		if(l != null) return l.r;
 		var vthis = this.locals.get("this");
@@ -2601,6 +2602,10 @@ hscript.Interp.prototype = {
 		var c = Type.resolveClass(id);
 		if(c != null) return c;
 		throw hscript.Error.EUnknownVariable(id);
+	}
+	,setVar: function(f,v){
+		var value = v;
+		this.variables.set(f,value);
 	}
 	,restore: function(old){
 		while(this.declared.length > old) {
@@ -4353,6 +4358,11 @@ hscript.Parser.prototype = {
 			return hscript.ExprDef.EContinue;
 		case "untyped":
 			return hscript.ExprDef.EUntyped(this.parseExpr());
+		case "using":
+			var expr = this.parseExpr();
+			var fieldsExpr = hscript.ExprDef.ECall(hscript.ExprDef.EField(hscript.ExprDef.EIdent("Reflect"),"fields"),[expr]);
+			var innerExpr = hscript.ExprDef.ECall(hscript.ExprDef.EIdent("__set__"),[hscript.ExprDef.EIdent("f"),hscript.ExprDef.ECall(hscript.ExprDef.EField(hscript.ExprDef.EIdent("Reflect"),"field"),[expr,hscript.ExprDef.EIdent("f")])]);
+			return hscript.ExprDef.EFor("f",fieldsExpr,innerExpr);
 		case "import":
 			var expr = this.parseExpr();
 			var name;
