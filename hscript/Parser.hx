@@ -181,8 +181,8 @@ class Parser {
 		return if( a.length == 1 ) a[0] else mk(EBlock(a),0);
 	}
 
-	function unexpected( tk ) : Dynamic {
-		error(EUnexpected(tokenString(tk)),tokenMin,tokenMax);
+	function unexpected( tk , ?info:String) : Dynamic {
+		error(EUnexpected(tokenString(tk) + (info == null?"":" - expected " + info)),tokenMin,tokenMax);
 		return null;
 	}
 
@@ -498,7 +498,7 @@ class Parser {
 						tk = token();
 					switch(tk) {
 						case TId(id): ident = id;
-						default: unexpected(tk);
+						default: unexpected(tk, "identifier");
 					}
 					tk = token();
 					switch(tk) {
@@ -508,15 +508,15 @@ class Parser {
 						default:
 					}
 					switch(tk) {
+						case TOp("="):
+							expr = parseExpr();
+							tk = token();
+						case TSemicolon, TComma:
 						case _ if(type != null):
 							push(tk);
 							expr = parseExpr();
 							tk = token();
-						case TOp("="):
-							expr = parseExpr();
-							tk = token();
-						case TSemicolon | TComma:
-						default: unexpected(tk);
+						default: unexpected(tk, "type or assignment");
 					}
 					{name: ident, type: type, expr: expr};
 				}];
