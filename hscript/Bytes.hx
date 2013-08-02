@@ -161,8 +161,8 @@ class Bytes {
 	}
 
 	function doEncode( e : Expr ) {
-		bout.addByte(Type.enumIndex(e));
-		switch( e ) {
+		bout.addByte(Type.enumIndex(e.expr));
+		switch( e.expr ) {
 			case EConst(c):
 				doEncodeConst(c);
 			case EIdent(v):
@@ -295,7 +295,7 @@ class Bytes {
 	}
 
 	function doDecode() : Expr {
-		return switch( bin.get(pin++) ) {
+		var e:ExprDef = switch( bin.get(pin++) ) {
 			case 0:
 				EConst( doDecodeConst() );
 			case 1:
@@ -418,8 +418,9 @@ class Bytes {
 			case 255:
 				null;
 			default:
-				throw "Invalid code "+bin.get(pin - 1) + " AKA " + Type.getEnumConstructs(Expr)[bin.get(pin-1)];
-		}
+				throw "Invalid code "+bin.get(pin - 1) + " AKA " + Type.getEnumConstructs(ExprDef)[bin.get(pin-1)];
+		};
+		return new Expr(e, 0, 0);
 	}
 	function doDecodeField():Field {
 		var expr = doDecode();

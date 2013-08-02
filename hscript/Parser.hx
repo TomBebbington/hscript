@@ -182,42 +182,14 @@ class Parser {
 		var t = token();
 		if( t != tk ) unexpected(t);
 	}
-
-	inline function expr(e:Expr):Expr  {
-		#if hscriptPos
-		return e.get();
-		#else
-		return e;
-		#end
-	}
-	inline function pmin(e:Expr) {
-		#if hscriptPos
-			return e.min();
-		#else
-			return 0;
-		#end
-	}
-
-	inline function pmax(e:Expr) {
-		#if hscriptPos
-			return e.max();
-		#else
-			return 0;
-		#end
-	}
-
-	inline function mk(e:Expr,?pmin,?pmax):Expr {
-		#if hscriptPos
+	inline function mk(e:ExprDef,?pmin,?pmax):Expr {
 		if( pmin == null ) pmin = tokenMin;
 		if( pmax == null ) pmax = tokenMax;
 		return new Expr(e, pmin, pmax);
-		#else
-		return e;
-		#end
 	}
 
 	function isBlock(e) {
-		return switch( expr(e) ) {
+		return switch(e.expr) {
 			case EClassDecl(_): true;
 			case EMacro(_, _): true;
 			case EBlock(_), EObject(_): true;
@@ -243,7 +215,7 @@ class Parser {
 				push(tk);
 			else
 				unexpected(tk);
-		} else switch(e) {
+		} else switch(e.expr) {
 			case EMacro(_, _):
 				push(tk);
 			default:
@@ -380,28 +352,28 @@ class Parser {
 		}
 	}
 
-	function makeUnop( op, e ) {
-		return switch( expr(e) ) {
-		case EBinop(bop, e1, e2): mk(EBinop(bop, makeUnop(op, e1), e2), pmin(e1), pmax(e2));
-		case ETernary(e1, e2, e3): mk(ETernary(makeUnop(op, e1), e2, e3), pmin(e1), pmax(e3));
-		default: mk(EUnop(op,true,e),pmin(e),pmax(e));
+	function makeUnop(op:String, e:Expr) {
+		return switch(e.expr) {
+			case EBinop(bop, e1, e2): mk(EBinop(bop, makeUnop(op, e1), e2), e1.pmin, e2.pmax);
+			case ETernary(e1, e2, e3): mk(ETernary(makeUnop(op, e1), e2, e3), e1.pmin, e3.pmax);
+			default: mk(EUnop(op,true,e),e.pmin,e.pmax);
 		}
 	}
 
-	function makeBinop( op, e1, e ) {
-		return switch( expr(e) ) {
+	function makeBinop( op:String, e1:Expr, e:Expr) {
+		return switch(e.expr) {
 		case EBinop(op2,e2,e3):
 			if( opPriority.get(op) <= opPriority.get(op2) && !opRightAssoc.exists(op) )
-				mk(EBinop(op2,makeBinop(op,e1,e2),e3),pmin(e1),pmax(e3));
+				mk(EBinop(op2,makeBinop(op,e1,e2),e3),e1.pmin, e3.pmax);
 			else
-				mk(EBinop(op, e1, e), pmin(e1), pmax(e));
+				mk(EBinop(op, e1, e), e1.pmin, e.pmax);
 		case ETernary(e2,e3,e4):
 			if( opRightAssoc.exists(op) )
-				mk(EBinop(op,e1,e),pmin(e1),pmax(e));
+				mk(EBinop(op,e1,e),e1.pmin,e.pmax);
 			else
-				mk(ETernary(makeBinop(op, e1, e2), e3, e4), pmin(e1), pmax(e));
+				mk(ETernary(makeBinop(op, e1, e2), e3, e4), e1.pmin, e.pmax);
 		default:
-			mk(EBinop(op,e1,e),pmin(e1),pmax(e));
+			mk(EBinop(op,e1,e),e1.pmin,e.pmax);
 		}
 	}
 
@@ -452,10 +424,10 @@ class Parser {
 							case TId("function"):
 								push(tk);
 								field.expr = parseExpr();
-								switch(field.expr) {
+								switch(field.expr.expr) {
 									case EFunction(a, b, n, c):
 										name = n;
-										field.expr = EFunction(a, b, null, c);
+										field.expr = mk(EFunction(a, b, null, c));
 									case all: throw EInvalidFunction;
 								};
 							case TOp("="): field.expr = parseExpr();
@@ -486,7 +458,7 @@ class Parser {
 					push(tk);
 					if( semic ) push(TSemicolon);
 				}
-				mk(EIf(cond,e1,e2),p1,(e2 == null) ? tokenMax : pmax(e2));
+				mk(EIf(cond,e1,e2),p1,(e2 == null) ? tokenMax : e2.pmax);
 			case "var":
 				var vars:Array<Var> = [];
 				var tk = null;
@@ -523,7 +495,7 @@ class Parser {
 			case "while":
 				var econd = parseExpr();
 				var e = parseExpr();
-				mk(EWhile(econd,e),p1,pmax(e));
+				mk(EWhile(econd,e),p1,e.pmax);
 			case "for":
 				ensure(TPOpen);
 				var tk = token();
@@ -537,7 +509,7 @@ class Parser {
 				var eiter = parseExpr();
 				ensure(TPClose);
 				var e = parseExpr();
-				mk(EFor(vname,eiter,e),p1,pmax(e));
+				mk(EFor(vname,eiter,e),p1,e.pmax);
 			case "switch":
 				ensure(TPOpen);
 				var val = parseExpr();
@@ -591,7 +563,7 @@ class Parser {
 				mk(EUsing(parseExpr()));
 			case "import":
 				var expr = parseExpr();
-				var name = switch(expr) {
+				var name = switch(expr.expr) {
 					case EField(_, f): f;
 					default: null;
 				}
@@ -648,12 +620,12 @@ class Parser {
 				else
 					ret = parseType();
 				var body = parseExpr();
-				mk(EFunction(args, body, name, ret),p1,pmax(body));
+				mk(EFunction(args, body, name, ret),p1,body.pmax);
 			case "return":
 				var tk = token();
 				push(tk);
 				var e = if( tk == TSemicolon ) null else parseExpr();
-				mk(EReturn(e),p1,if( e == null ) tokenMax else pmax(e));
+				mk(EReturn(e),p1,if( e == null ) tokenMax else e.pmax);
 			case "new":
 				var a = new Array();
 				var tk = token();
@@ -688,7 +660,7 @@ class Parser {
 				mk(ENew(a.join("."),args),p1);
 			case "throw":
 				var e = parseExpr();
-				mk(EThrow(e),p1,pmax(e));
+				mk(EThrow(e),p1,e.pmax);
 			case "try":
 				var e = parseExpr();
 				var tk = token();
@@ -703,7 +675,7 @@ class Parser {
 				var t = parseType();
 				ensure(TPClose);
 				var ec = parseExpr();
-				mk(ETry(e,vname,t,ec),p1,pmax(ec));
+				mk(ETry(e,vname,t,ec),p1,ec.pmax);
 			default:
 				null;
 		}
@@ -714,11 +686,11 @@ class Parser {
 		switch( tk ) {
 		case TOp(op):
 			if( unops.get(op) ) {
-				if( isBlock(e1) || switch(expr(e1)) { case EParent(_): true; default: false; } ) {
+				if( isBlock(e1) || switch(e1.expr) { case EParent(_): true; default: false; } ) {
 					push(tk);
 					return e1;
 				}
-				return parseExprNext(mk(EUnop(op,false,e1),pmin(e1)));
+				return parseExprNext(mk(EUnop(op,false,e1),e1.pmin));
 			}
 			return makeBinop(op,e1,parseExpr());
 		case TDot:
@@ -728,18 +700,18 @@ class Parser {
 			case TId(id): field = id;
 			default: unexpected(tk);
 			}
-			return parseExprNext(mk(EField(e1,field),pmin(e1)));
+			return parseExprNext(mk(EField(e1,field),e1.pmin));
 		case TPOpen:
-			return parseExprNext(mk(ECall(e1,parseExprList(TPClose)),pmin(e1)));
+			return parseExprNext(mk(ECall(e1,parseExprList(TPClose)),e1.pmin));
 		case TBkOpen:
 			var e2 = parseExpr();
 			ensure(TBkClose);
-			return parseExprNext(mk(EArray(e1,e2),pmin(e1)));
+			return parseExprNext(mk(EArray(e1,e2),e1.pmin));
 		case TQuestion:
 			var e2 = parseExpr();
 			ensure(TDoubleDot);
 			var e3 = parseExpr();
-			return mk(ETernary(e1,e2,e3),pmin(e1),pmax(e3));
+			return mk(ETernary(e1,e2,e3),e1.pmin,e3.pmax);
 		default:
 			push(tk);
 			return e1;

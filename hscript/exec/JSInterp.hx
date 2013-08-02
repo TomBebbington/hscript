@@ -12,7 +12,7 @@ class JSInterp {
 	inline function genCall(f:Expr, args:Array<Expr>, val:Bool=false):String {
 		return genValue(f) + "(" + args.map(genValue).join(", ") + ")";
 	}
-	function genValue(e:Expr):String return switch(e) {
+	function genValue(e:Expr):String return switch(e.expr) {
 		case ECall(f, as): genCall(f, as, true);
 		case EContinue: throw "Unsupported";
 		case EVars(_) | EFor(_) | EWhile(_) | EThrow(_): genExpr(e); null;
@@ -29,43 +29,39 @@ class JSInterp {
 				var isLast = i == es.length-1;
 				(isLast ? "return "+genValue(exp) : genExpr(exp)) + ";";
 			}].join("") + "})()";
-		case EArrayDecl([EFor(v, it, ite)]):
-			var newVal:Expr = EBlock([
-				EVars([{name: "arr", type:CTPath(["Array"]), expr: EArrayDecl([])}]),
-				EFor(v, it, ECall(EField(EIdent("arr"), "push"), [ite])),
-				EIdent("arr")
-			]);
-			var asStr = genValue(newVal);
-			asStr;
+		case EArrayDecl([{expr: EFor(v, it, ite)}]):
+			genValue(Tools.simplify(e));
 		case EIf(cond, a, b) if(b == null):
-			genValue(ETernary(cond, a, EIdent("null")));
+			genValue(new Expr(ETernary(cond, a, new Expr(EIdent("null"), e.pmin, e.pmax)), e.pmin, e.pmax));
 		case EIf(cond, a, b):
-			genValue(EParent(ETernary(cond, a, b)));
+			genValue(new Expr(EParent(new Expr(ETernary(cond, a, b), e.pmin, e.pmax)), e.pmin, e.pmax));
 		default: genExpr(e);
 	}
-	function genBlock(e:Expr, val:Bool=false):String return switch(e) {
+	function genBlock(e:Expr, val:Bool=false):String return switch(e.expr) {
 		case EBlock(_) | EIf(_) if(val): genValue(e);
 		case EBlock(_) | EIf(_): genExpr(e);
-		case _ if(val): genValue(EBlock([e]));
-		default: genExpr(EBlock([e]));
+		case _ if(val): genValue(new Expr(EBlock([e]), e.pmin, e.pmax));
+		default: genExpr(new Expr(EBlock([e]), e.pmin, e.pmax));
 	}
-	public function genExpr(e:Expr):String return switch(e) {
+	public function genExpr(e:Expr):String return switch(e.expr) {
 		case EConst(CString(s)): "\"" + s.replace("\"", "\\\"") + "\"";
 		case EConst(CInt(i)): Std.string(i);
 		case EConst(CFloat(v)): Std.string(v);
-		case EArrayDecl(a) if(a.length > 0 && a[0].getName() == "EBinop" && a[0].getParameters()[0] == "=>"):
-			genBlock(EBlock({
+		case EArrayDecl(a) if(a.length > 0 && a[0].expr.getName() == "EBinop" && a[0].expr.getParameters()[0] == "=>"):
+			genBlock(new Expr(EBlock({
 				var block:Array<Expr> = [];
-				block.push(EVars([{name: "$map", expr: ENew("haxe.ds.BalancedTree", [])}]));
+				block.push(new Expr(EVars([{name: "$map", expr: new Expr(ENew("haxe.ds.BalancedTree", []), e.pmin, e.pmax)}]), e.pmin, e.pmax));
+				var mape:Expr = new Expr(EIdent("$map"), e.pmin, e.pmax);
 				for(i in a) {
-					switch(i) {
-						case EBinop("=>", k, v): block.push(ECall(EField(EIdent("$map"), "set"), [k, v]));
-						default: throw Error.EUnexpected(i.getName(), "=>");
+					switch(i.expr) {
+						case EBinop("=>", k, v):
+							block.push(new Expr(ECall(new Expr(EField(mape, "set"), e.pmin, e.pmax), [k, v]), e.pmin, e.pmax));
+						default: throw Error.EUnexpected(i.expr.getName(), "=>");
 					}
 				}
-				block.push(EIdent("$map"));
+				block.push(mape);
 				block;
-			}), true);
+			}), e.pmin, e.pmax), true);
 		case EArrayDecl(a): "[" + [for(i in a) genValue(i)].join(", ") + "]";
 		case EUntyped(v): genExpr(v);
 		case EIdent(n): n;
@@ -86,20 +82,10 @@ class JSInterp {
 		case ETernary(cond, a, b): '${genValue(cond)}?${genValue(a)}:${genValue(b)}';
 		case EIf(cond, a, b) if(b == null): "if("+genValue(cond)+")"+genBlock(a);
 		case EIf(cond, a, b): "if("+genValue(cond)+")"+genBlock(a)+" else "+genBlock(b);
-		case EFor(v, EBinop("...", a, b), ite):
+		case EFor(v, {expr: EBinop("...", a, b)}, ite):
 			'for(var $v=${genValue(a)};$v<${genValue(b)};$v++)${genExpr(ite)}';
 		case EFor(v, it, ite):
-			var itn = "$it";
-			var itr:Expr = EIdent(itn);
-			genExpr(EBlock([
-				EVars([{name: itn, expr: it}, {name: v}]),
-				EIf(EBinop("!=", EField(itr, "iterator"), EIdent("null")), EBinop("=", itr, ECall(EField(itr, "iterator"), [])),
-					EIf(ECall(EField(EIdent("Std"), "is"), [itr, EIdent("Array")]), EBinop("=", itr, ECall(EField(EIdent("HxOverrides"), "iter"), [itr])))),
-				EWhile(ECall(EField(itr, "hasNext"), []), EBlock([
-					EBinop("=", EIdent(v), ECall(EField(EIdent("$it"), "next"), [])),
-					ite
-				]))
-			]));
+			'function(){var $$it = ${genValue(it)};while($$it.hasNext){var $v = $$it.next();${genExpr(ite)};}}';
 		case ETry(ex, v, t, ec):
 			"try "+genExpr(ex) + " catch("+v+") "+genExpr(ec);
 		case EMacro(_): throw "unsupported";
@@ -114,8 +100,18 @@ class JSInterp {
 		case EBlock(es):
 			"{" + [for(ex in es) genExpr(ex)+";"].join("") + "}";
 		case ECall(o, as): genCall(o, as);
-		default: throw 'Cannot compile $e into Javascript';
-	};
+		case EClassDecl(cd):
+			var constructor:Expr = cd.constructor != null && cd.constructor.expr != null ? cd.constructor.expr : new Expr(EFunction([], new Expr(EBlock([]), e.pmin, e.pmax), null, null), e.pmin, e.pmax);
+			switch(constructor.expr) {
+				case EFunction(args, fe, _, ret):
+					constructor.expr = EFunction(args, fe, cd.name, ret);
+				default:
+			}
+			genExpr(constructor);
+		case EUsing(v):
+			'for(f in ${genValue(v)}) window[f] = ${genValue(v)}[f]';
+		case ESwitch(_): genExpr(hscript.Tools.simplify(e));
+	}
 	function translate(e:Expr, val:Bool = false):String {
 		var str:String = val ? genValue(e) : genExpr(e);
 		var varDef:String = "";

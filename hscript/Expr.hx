@@ -107,15 +107,14 @@ enum Error {
 	ENoConstructor(c:String);
 }
 
-class AtPosData<T> {
-	public var _:T;
-	public var pmin : Int;
-	public var pmax : Int;
-	public function new(v:T, pmin, pmax) {
-		this._ = v;
+class Expr {
+	public var expr:ExprDef;
+	public var pmin(default, null): Int;
+	public var pmax(default, null): Int;
+	public function new(v:ExprDef, pmin, pmax) {
+		this.expr = v;
 		this.pmin = pmin;
 		this.pmax = pmax;
 	}
 }
-typedef Expr = ExprDef;
 typedef ExprOf<T> = Expr;
