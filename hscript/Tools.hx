@@ -1,6 +1,12 @@
 package hscript;
 import hscript.Expr;
 class Tools {
+	public static function toBlock(e:Expr):Expr {
+		return switch(e.expr) {
+			case EBlock(_): e;
+			default: new Expr(EBlock([e]), e.pmin, e.pmax);
+		};
+	}
 	public static function simplify(e:Expr, isVal:Bool = false):Expr {
 		return switch(e.expr) {
 			case EArrayDecl([{expr: EFor(v, it, ite) }]):

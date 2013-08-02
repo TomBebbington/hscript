@@ -420,7 +420,7 @@ class Parser {
 									default: unexpected(tk);
 								};
 								ensure(TPClose);
-							case TDoubleDot: field.type = parseType(); canSkip = true;
+							case TDoubleDot: field.type = parseType(); //canSkip = true;
 							case TId("function"):
 								push(tk);
 								field.expr = parseExpr();
@@ -430,6 +430,7 @@ class Parser {
 										field.expr = mk(EFunction(a, b, null, c));
 									case all: throw EInvalidFunction;
 								};
+								field.access.set(Function);
 							case TOp("="): field.expr = parseExpr();
 							case TSemicolon: break;
 							default: unexpected(tk);

@@ -15,17 +15,19 @@ class Test {
 			var content = txt.getValue();
 			clear();
 			content = '{$content}';
-			#if showError try { #end
+			try {
 				var e = new Parser().parseString(content);
-				e = Bytes.decode(Bytes.encode(e));
+				//e = Bytes.decode(Bytes.encode(e));
 				new Exec().execute(e);
-			#if showError } catch(err:Error) {
+			} catch(err:Error) {
 				var str = switch(err) {
 					case EUnterminatedString: "String is not terminated. Did you forget to add a closing quote?";
 					case EUnterminatedComment: "Comment not terminated.";
 					case EUnknownVariable(v): 'Unknown variable "$v"';
-					case EUnexpected("}"): 'Semicolon expected';
-					case EUnexpected(s): 'Unexpected $s';
+					case EUnexpected("}", _): 'Semicolon expected';
+					case EUnexpected(s, _): 'Unexpected $s';
+					case EInvalidParameters(name, s, g): 'Expected $s parameters, got $g in $name';
+					case EInvalidFunction: 'Invalid function';
 					case EInvalidOp(op): 'Invalid operation $op';
 					case EInvalidIterator(v): 'Invalid iterator $v';
 					case EInvalidChar(c): 'Invalid char "${String.fromCharCode(c)}"';
@@ -33,7 +35,7 @@ class Test {
 					case ENoConstructor(cl): '$cl does not have a constructor';
 				};
 				print('Error: $str');
-			} #end
+			}
 		}
 		//new haxe.Timer(30).run = runScript;
 		window.onload = function(_) {

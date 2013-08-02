@@ -38,7 +38,7 @@ enum Access {
 	Public;
 	Private;
 	Static;
-	Inline;
+	Function;
 	HasGetter;
 	HasSetter;
 }

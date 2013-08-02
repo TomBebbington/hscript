@@ -376,9 +376,66 @@ Test.main = function(){
 		var content = txt.getValue();
 		clear();
 		content = "{" + content + "}";
-		var e = new hscript.Parser().parseString(content);
-		e = hscript.Bytes.decode(hscript.Bytes.encode(e));
-		new hscript.exec.JSInterp().execute(e);
+		try {
+			var e = new hscript.Parser().parseString(content);
+			new hscript.exec.JSInterp().execute(e);
+		} catch( err ) {
+			if( js.Boot.__instanceof(err,hscript.Error) ) {
+				var str;
+				switch(err[1]) {
+				case 2:
+					str = "String is not terminated. Did you forget to add a closing quote?";
+					break;
+				case 3:
+					str = "Comment not terminated.";
+					break;
+				case 4:
+					var v = err[2];
+					str = "Unknown variable \"" + v + "\"";
+					break;
+				case 1:
+					var s = err[2];
+					switch(err[2]) {
+					case "}":
+						str = "Semicolon expected";
+						break;
+					default:
+						str = "Unexpected " + s;
+					}
+					break;
+				case 9:
+					var g = err[4];
+					var s = err[3];
+					var name = err[2];
+					str = "Expected " + s + " parameters, got " + g + " in " + name;
+					break;
+				case 8:
+					str = "Invalid function";
+					break;
+				case 6:
+					var op = err[2];
+					str = "Invalid operation " + op;
+					break;
+				case 5:
+					var v = err[2];
+					str = "Invalid iterator " + v;
+					break;
+				case 0:
+					var c = err[2];
+					str = "Invalid char \"" + String.fromCharCode(c) + "\"";
+					break;
+				case 7:
+					var f = err[2];
+					str = "Cannot access " + f;
+					break;
+				case 10:
+					var cl = err[2];
+					str = "" + cl + " does not have a constructor";
+					break;
+				}
+				haxe.Log.trace("Error: " + str,null);
+			} else throw(err);
+		}
 	};
 	js.Browser.window.onload = function(_){
 		run = js.Browser.document.getElementById("run");
@@ -1787,674 +1844,11 @@ haxe.io.StringInput.prototype = $extend(haxe.io.BytesInput.prototype,{
 	__class__: haxe.io.StringInput
 });
 var hscript = {}
-hscript.Bytes = function(bin){
-	this.bin = bin;
-	this.pin = 0;
-	this.bout = new haxe.io.BytesBuffer();
-	this.hstrings = new haxe.ds.StringMap();
-	this.strings = [null];
-	this.nstrings = 1;
-};
-$hxClasses["hscript.Bytes"] = hscript.Bytes;
-hscript.Bytes.__name__ = ["hscript","Bytes"];
-hscript.Bytes.encode = function(e){
-	var b = new hscript.Bytes();
-	b.doEncode(e);
-	return b.bout.getBytes();
-}
-hscript.Bytes.decode = function(bytes){
-	return new hscript.Bytes(bytes).doDecode();
-}
-hscript.Bytes.prototype = {
-	doDecodeField: function(){
-		var expr = this.doDecode();
-		var type = this.doDecodeType();
-		var access = this.bin.b[this.pin++];
-		return { expr : expr, access : access, type : type};
-	}
-	,doDecode: function(){
-		var e;
-		var _g = this.bin.b[this.pin++];
-		switch(_g) {
-		case 0:
-			e = hscript.ExprDef.EConst(this.doDecodeConst());
-			break;
-		case 1:
-			e = hscript.ExprDef.EIdent(this.doDecodeString());
-			break;
-		case 2:
-			var len = this.bin.b[this.pin++];
-			e = hscript.ExprDef.EVars((function($this) {
-				var $r;
-				var _g1 = [];
-				{
-					var _g2 = 0;
-					while(_g2 < len) {
-						var i = _g2++;
-						_g1.push((function($this) {
-							var $r;
-							var name = $this.doDecodeString();
-							var expr = $this.doDecode();
-							$r = { name : name, expr : expr};
-							return $r;
-						}($this)));
-					}
-				}
-				$r = _g1;
-				return $r;
-			}(this)));
-			break;
-		case 3:
-			e = hscript.ExprDef.EParent(this.doDecode());
-			break;
-		case 4:
-			var a = new Array();
-			var _g2 = 0;
-			var _g1 = this.bin.b[this.pin++];
-			while(_g2 < _g1) {
-				var i = _g2++;
-				a.push(this.doDecode());
-			}
-			e = hscript.ExprDef.EBlock(a);
-			break;
-		case 5:
-			var e1 = this.doDecode();
-			e = hscript.ExprDef.EField(e1,this.doDecodeString());
-			break;
-		case 6:
-			var op = this.doDecodeString();
-			var e1 = this.doDecode();
-			e = hscript.ExprDef.EBinop(op,e1,this.doDecode());
-			break;
-		case 7:
-			var op = this.doDecodeString();
-			var prefix = this.bin.b[this.pin++] != 0;
-			e = hscript.ExprDef.EUnop(op,prefix,this.doDecode());
-			break;
-		case 8:
-			var e1 = this.doDecode();
-			var params = new Array();
-			var _g2 = 0;
-			var _g1 = this.bin.b[this.pin++];
-			while(_g2 < _g1) {
-				var i = _g2++;
-				params.push(this.doDecode());
-			}
-			e = hscript.ExprDef.ECall(e1,params);
-			break;
-		case 9:
-			var cond = this.doDecode();
-			var e1 = this.doDecode();
-			e = hscript.ExprDef.EIf(cond,e1,this.doDecode());
-			break;
-		case 10:
-			var cond = this.doDecode();
-			e = hscript.ExprDef.EWhile(cond,this.doDecode());
-			break;
-		case 11:
-			var v = this.doDecodeString();
-			var it = this.doDecode();
-			e = hscript.ExprDef.EFor(v,it,this.doDecode());
-			break;
-		case 12:
-			e = hscript.ExprDef.EBreak;
-			break;
-		case 13:
-			e = hscript.ExprDef.EContinue;
-			break;
-		case 14:
-			var params = new Array();
-			var _g2 = 0;
-			var _g1 = this.bin.b[this.pin++];
-			while(_g2 < _g1) {
-				var i = _g2++;
-				params.push({ name : this.doDecodeString(), t : null});
-			}
-			var e1 = this.doDecode();
-			var name = this.doDecodeString();
-			e = hscript.ExprDef.EFunction(params,e1,name == ""?null:name);
-			break;
-		case 15:
-			e = hscript.ExprDef.EReturn(this.doDecode());
-			break;
-		case 16:
-			var e1 = this.doDecode();
-			e = hscript.ExprDef.EArray(e1,this.doDecode());
-			break;
-		case 17:
-			var el = new Array();
-			var _g2 = 0;
-			var _g1 = this.bin.b[this.pin++];
-			while(_g2 < _g1) {
-				var i = _g2++;
-				el.push(this.doDecode());
-			}
-			e = hscript.ExprDef.EArrayDecl(el);
-			break;
-		case 18:
-			var cl = this.doDecodeString();
-			var el = new Array();
-			var _g2 = 0;
-			var _g1 = this.bin.b[this.pin++];
-			while(_g2 < _g1) {
-				var i = _g2++;
-				el.push(this.doDecode());
-			}
-			e = hscript.ExprDef.ENew(cl,el);
-			break;
-		case 19:
-			e = hscript.ExprDef.EThrow(this.doDecode());
-			break;
-		case 20:
-			var e1 = this.doDecode();
-			var v = this.doDecodeString();
-			e = hscript.ExprDef.ETry(e1,v,null,this.doDecode());
-			break;
-		case 21:
-			var fl = new Array();
-			var _g2 = 0;
-			var _g1 = this.bin.b[this.pin++];
-			while(_g2 < _g1) {
-				var i = _g2++;
-				var name = this.doDecodeString();
-				var e1 = this.doDecode();
-				fl.push({ name : name, e : e1});
-			}
-			e = hscript.ExprDef.EObject(fl);
-			break;
-		case 22:
-			var cond = this.doDecode();
-			var e1 = this.doDecode();
-			e = hscript.ExprDef.ETernary(cond,e1,this.doDecode());
-			break;
-		case 23:
-			var e1 = this.doDecode();
-			var cases;
-			var _g1 = [];
-			var _g3 = 0;
-			var _g2 = this.bin.b[this.pin++];
-			while(_g3 < _g2) {
-				var i = _g3++;
-				_g1.push((function($this) {
-					var $r;
-					var flags = $this.bin.b[$this.pin++];
-					var values;
-					{
-						var _g4 = [];
-						var _g6 = 0;
-						var _g5 = $this.bin.b[$this.pin++];
-						while(_g6 < _g5) {
-							var i1 = _g6++;
-							_g4.push($this.doDecode());
-						}
-						values = _g4;
-					}
-					var guard;
-					if((flags & 1 << hscript.CaseFlags.HasGuard[1]) != 0) guard = $this.doDecode(); else guard = null;
-					var expr;
-					if((flags & 1 << hscript.CaseFlags.HasExpr[1]) != 0) expr = $this.doDecode(); else expr = null;
-					$r = { values : values, guard : guard, expr : expr};
-					return $r;
-				}(this)));
-			}
-			cases = _g1;
-			var edef;
-			if(this.bin.b[this.pin++] == 1) edef = this.doDecode(); else edef = null;
-			e = hscript.ExprDef.ESwitch(e1,cases,edef);
-			break;
-		case 24:
-			e = hscript.ExprDef.EUntyped(this.doDecode());
-			break;
-		case 25:
-			var name = this.doDecodeString();
-			var fields = new haxe.ds.StringMap();
-			var fn = "";
-			var _g1 = new haxe.ds.StringMap();
-			while((fn = this.doDecodeString()).length > 0) _g1.set(fn,this.doDecodeField());
-			fields = _g1;
-			var hasConst = this.bin.b[this.pin++] != 255;
-			var $const;
-			if(hasConst) $const = this.doDecodeField(); else $const = null;
-			e = hscript.ExprDef.EClassDecl({ name : name, fields : fields, constructor : $const});
-			break;
-		case 26:
-			var name = this.doDecodeString();
-			var len = this.bin.b[this.pin++];
-			var args;
-			var _g1 = [];
-			var _g2 = 0;
-			while(_g2 < len) {
-				var i = _g2++;
-				_g1.push(this.doDecodeString());
-			}
-			args = _g1;
-			e = hscript.ExprDef.EMacro(name,args);
-			break;
-		case 27:
-			e = hscript.ExprDef.EUsing(this.doDecode());
-			break;
-		case 255:
-			e = null;
-			break;
-		default:
-			throw "Invalid code " + this.bin.b[this.pin - 1] + " AKA " + Type.getEnumConstructs(hscript.ExprDef)[this.bin.b[this.pin - 1]];
-		}
-		return new hscript.Expr(e,0,0);
-	}
-	,doEncode: function(e){
-		this.bout.b.push(e.expr[1]);
-		switch(e.expr[1]) {
-		case 0:
-			var c = e.expr[2];
-			this.doEncodeConst(c);
-			break;
-		case 1:
-			var v = e.expr[2];
-			this.doEncodeString(v);
-			break;
-		case 2:
-			var vs = e.expr[2];
-			this.bout.b.push(vs.length);
-			var _g = 0;
-			while(_g < vs.length) {
-				var v = vs[_g];
-				++_g;
-				this.doEncodeString(v.name);
-				if(v.expr == null) this.bout.b.push(255); else this.doEncode(v.expr);
-			}
-			break;
-		case 3:
-			var e1 = e.expr[2];
-			this.doEncode(e1);
-			break;
-		case 4:
-			var el = e.expr[2];
-			this.bout.b.push(el.length);
-			var _g = 0;
-			while(_g < el.length) {
-				var e1 = el[_g];
-				++_g;
-				this.doEncode(e1);
-			}
-			break;
-		case 5:
-			var f = e.expr[3];
-			var e1 = e.expr[2];
-			this.doEncode(e1);
-			this.doEncodeString(f);
-			break;
-		case 6:
-			var e2 = e.expr[4];
-			var e1 = e.expr[3];
-			var op = e.expr[2];
-			this.doEncodeString(op);
-			this.doEncode(e1);
-			this.doEncode(e2);
-			break;
-		case 7:
-			var e1 = e.expr[4];
-			var prefix = e.expr[3];
-			var op = e.expr[2];
-			this.doEncodeString(op);
-			this.bout.b.push(prefix?1:0);
-			this.doEncode(e1);
-			break;
-		case 8:
-			var el = e.expr[3];
-			var e1 = e.expr[2];
-			this.doEncode(e1);
-			this.bout.b.push(el.length);
-			var _g = 0;
-			while(_g < el.length) {
-				var e2 = el[_g];
-				++_g;
-				this.doEncode(e2);
-			}
-			break;
-		case 9:
-			var e2 = e.expr[4];
-			var e1 = e.expr[3];
-			var cond = e.expr[2];
-			this.doEncode(cond);
-			this.doEncode(e1);
-			if(e2 == null) this.bout.b.push(255); else this.doEncode(e2);
-			break;
-		case 10:
-			var e1 = e.expr[3];
-			var cond = e.expr[2];
-			this.doEncode(cond);
-			this.doEncode(e1);
-			break;
-		case 11:
-			var e1 = e.expr[4];
-			var it = e.expr[3];
-			var v = e.expr[2];
-			this.doEncodeString(v);
-			this.doEncode(it);
-			this.doEncode(e1);
-			break;
-		case 12:case 13:
-			break;
-		case 14:
-			var name = e.expr[4];
-			var e1 = e.expr[3];
-			var params = e.expr[2];
-			this.bout.b.push(params.length);
-			var _g = 0;
-			while(_g < params.length) {
-				var p = params[_g];
-				++_g;
-				this.doEncodeString(p.name);
-			}
-			this.doEncode(e1);
-			this.doEncodeString(name == null?"":name);
-			break;
-		case 15:
-			var e1 = e.expr[2];
-			if(e1 == null) this.bout.b.push(255); else this.doEncode(e1);
-			break;
-		case 16:
-			var index = e.expr[3];
-			var e1 = e.expr[2];
-			this.doEncode(e1);
-			this.doEncode(index);
-			break;
-		case 17:
-			var el = e.expr[2];
-			if(el.length >= 255) throw "assert";
-			this.bout.b.push(el.length);
-			var _g = 0;
-			while(_g < el.length) {
-				var e1 = el[_g];
-				++_g;
-				this.doEncode(e1);
-			}
-			break;
-		case 18:
-			var params = e.expr[3];
-			var cl = e.expr[2];
-			this.doEncodeString(cl);
-			this.bout.b.push(params.length);
-			var _g = 0;
-			while(_g < params.length) {
-				var e1 = params[_g];
-				++_g;
-				this.doEncode(e1);
-			}
-			break;
-		case 19:
-			var e1 = e.expr[2];
-			this.doEncode(e1);
-			break;
-		case 20:
-			var ecatch = e.expr[5];
-			var v = e.expr[3];
-			var e1 = e.expr[2];
-			this.doEncode(e1);
-			this.doEncodeString(v);
-			this.doEncode(ecatch);
-			break;
-		case 21:
-			var fl = e.expr[2];
-			this.bout.b.push(fl.length);
-			var _g = 0;
-			while(_g < fl.length) {
-				var f = fl[_g];
-				++_g;
-				this.doEncodeString(f.name);
-				this.doEncode(f.e);
-			}
-			break;
-		case 22:
-			var e2 = e.expr[4];
-			var e1 = e.expr[3];
-			var cond = e.expr[2];
-			this.doEncode(cond);
-			this.doEncode(e1);
-			this.doEncode(e2);
-			break;
-		case 23:
-			var def = e.expr[4];
-			var cases = e.expr[3];
-			var e1 = e.expr[2];
-			this.doEncode(e1);
-			this.bout.b.push(cases.length);
-			var _g = 0;
-			while(_g < cases.length) {
-				var c = cases[_g];
-				++_g;
-				var flags = 0;
-				if(c.guard != null) flags |= 1 << hscript.CaseFlags.HasGuard[1];
-				if(c.expr != null) flags |= 1 << hscript.CaseFlags.HasExpr[1];
-				this.bout.b.push(flags);
-				this.bout.b.push(c.values.length);
-				var _g1 = 0;
-				var _g2 = c.values;
-				while(_g1 < _g2.length) {
-					var v = _g2[_g1];
-					++_g1;
-					this.doEncode(v);
-				}
-				if(c.guard != null) this.doEncode(c.guard);
-				if(c.expr != null) this.doEncode(c.expr);
-			}
-			this.bout.b.push(def == null?0:1);
-			if(def != null) this.doEncode(def);
-			break;
-		case 24:
-			var e1 = e.expr[2];
-			this.doEncode(e1);
-			break;
-		case 25:
-			var c = e.expr[2];
-			this.doEncodeString(c.name);
-			var $it0 = c.fields.keys();
-			while( $it0.hasNext() ) {
-				var fn = $it0.next();
-				var f = c.fields.get(fn);
-				this.doEncodeString(fn);
-				this.doEncodeField(f);
-			}
-			this.doEncodeString("");
-			this.bout.b.push(c.constructor == null?255:0);
-			this.doEncodeField(c.constructor);
-			break;
-		case 26:
-			var args = e.expr[3];
-			var name = e.expr[2];
-			this.doEncodeString(name);
-			this.bout.b.push(args.length);
-			var _g = 0;
-			while(_g < args.length) {
-				var a = args[_g];
-				++_g;
-				this.doEncodeString(a);
-			}
-			break;
-		case 27:
-			var o = e.expr[2];
-			this.doEncode(o);
-			break;
-		}
-	}
-	,doEncodeField: function(f){
-		if(f.expr == null) this.bout.b.push(255); else this.doEncode(f.expr);
-		if(f.type == null) this.bout.b.push(255); else this.doEncodeType(f.type);
-		this.bout.b.push(f.access);
-	}
-	,doDecodeConst: function(){
-		var _g = this.bin.b[this.pin++];
-		switch(_g) {
-		case 0:
-			return hscript.Const.CInt(this.bin.b[this.pin++]);
-		case 1:
-			var i = this.bin.b[this.pin] | this.bin.b[this.pin + 1] << 8 | this.bin.b[this.pin + 2] << 16 | this.bin.b[this.pin + 3] << 24;
-			this.pin += 4;
-			return hscript.Const.CInt(i);
-		case 2:
-			return hscript.Const.CFloat(Std.parseFloat(this.doDecodeString()));
-		case 3:
-			return hscript.Const.CString(this.doDecodeString());
-		default:
-			throw null;
-		}
-	}
-	,doDecodeType: function(){
-		var _g = this.bin.b[this.pin++];
-		var all = _g;
-		switch(_g) {
-		case 0:
-			var pathLen = this.bin.b[this.pin++];
-			var path;
-			var _g1 = [];
-			var _g2 = 0;
-			while(_g2 < pathLen) {
-				var i = _g2++;
-				_g1.push(this.doDecodeString());
-			}
-			path = _g1;
-			var paramLen = this.bin.b[this.pin++];
-			var params;
-			var _g2 = [];
-			var _g3 = 0;
-			while(_g3 < paramLen) {
-				var i = _g3++;
-				_g2.push(this.doDecodeType());
-			}
-			params = _g2;
-			return hscript.CType.CTPath(path,params);
-		case 255:
-			return null;
-		default:
-			throw "Invalid code " + all + " AKA " + Type.getEnumConstructs(hscript.CType)[all];
-		}
-	}
-	,doEncodeType: function(t){
-		var ind = t[1];
-		this.bout.b.push(ind);
-		switch(t[1]) {
-		case 3:
-			var t1 = t[2];
-			this.doEncodeType(t1);
-			break;
-		case 0:
-			var params = t[3];
-			var path = t[2];
-			this.bout.b.push(path.length);
-			var _g = 0;
-			while(_g < path.length) {
-				var p = path[_g];
-				++_g;
-				this.doEncodeString(p);
-			}
-			this.bout.b.push(params == null?0:params.length);
-			if(params != null) {
-				var _g = 0;
-				while(_g < params.length) {
-					var p = params[_g];
-					++_g;
-					this.doEncodeType(p);
-				}
-			}
-			break;
-		case 1:
-			var ret = t[3];
-			var args = t[2];
-			this.bout.b.push(args.length);
-			var _g = 0;
-			while(_g < args.length) {
-				var a = args[_g];
-				++_g;
-				this.doEncodeType(a);
-			}
-			this.doEncodeType(ret);
-			break;
-		case 2:
-			var fields = t[2];
-			this.bout.b.push(fields.length);
-			var _g = 0;
-			while(_g < fields.length) {
-				var f = fields[_g];
-				++_g;
-				this.doEncodeString(f.name);
-				this.doEncodeType(f.t);
-			}
-			break;
-		}
-	}
-	,doEncodeConst: function(c){
-		switch(c[1]) {
-		case 0:
-			var v = c[2];
-			if(v >= 0 && v <= 255) {
-				this.bout.b.push(0);
-				this.bout.b.push(v);
-			} else {
-				this.bout.b.push(1);
-				this.bout.b.push(v & 255);
-				this.bout.b.push(v >> 8 & 255);
-				this.bout.b.push(v >> 16 & 255);
-				this.bout.b.push(v >>> 24);
-			}
-			break;
-		case 1:
-			var f = c[2];
-			this.bout.b.push(2);
-			this.doEncodeString(Std.string(f));
-			break;
-		case 2:
-			var s = c[2];
-			this.bout.b.push(3);
-			this.doEncodeString(s);
-			break;
-		}
-	}
-	,doDecodeString: function(){
-		var id = this.bin.b[this.pin++];
-		if(id == 0) {
-			var len = this.bin.b[this.pin];
-			var str = this.bin.readString(this.pin + 1,len);
-			this.pin += len + 1;
-			if(this.strings.length == 255) this.strings = [null];
-			this.strings.push(str);
-			return str;
-		} else return this.strings[id];
-	}
-	,doEncodeString: function(v){
-		var vid = this.hstrings.get(v);
-		if(vid == null) {
-			if(this.nstrings == 256) {
-				this.hstrings = new haxe.ds.StringMap();
-				this.nstrings = 1;
-			}
-			this.hstrings.set(v,this.nstrings);
-			this.bout.b.push(0);
-			var vb = haxe.io.Bytes.ofString(v);
-			this.bout.b.push(vb.length);
-			this.bout.add(vb);
-			this.nstrings++;
-		} else this.bout.b.push(vid);
-	}
-	,nstrings: null
-	,strings: null
-	,hstrings: null
-	,pin: null
-	,bout: null
-	,bin: null
-	,__class__: hscript.Bytes
-}
-hscript.CaseFlags = $hxClasses["hscript.CaseFlags"] = { __ename__ : ["hscript","CaseFlags"], __constructs__ : ["HasGuard","HasExpr"] }
-hscript.CaseFlags.HasGuard = ["HasGuard",0];
-hscript.CaseFlags.HasGuard.toString = $estr;
-hscript.CaseFlags.HasGuard.__enum__ = hscript.CaseFlags;
-hscript.CaseFlags.HasExpr = ["HasExpr",1];
-hscript.CaseFlags.HasExpr.toString = $estr;
-hscript.CaseFlags.HasExpr.__enum__ = hscript.CaseFlags;
 hscript.Const = $hxClasses["hscript.Const"] = { __ename__ : ["hscript","Const"], __constructs__ : ["CInt","CFloat","CString"] }
 hscript.Const.CInt = function(v) { var $x = ["CInt",0,v]; $x.__enum__ = hscript.Const; $x.toString = $estr; return $x; }
 hscript.Const.CFloat = function(f) { var $x = ["CFloat",1,f]; $x.__enum__ = hscript.Const; $x.toString = $estr; return $x; }
 hscript.Const.CString = function(s) { var $x = ["CString",2,s]; $x.__enum__ = hscript.Const; $x.toString = $estr; return $x; }
-hscript.Access = $hxClasses["hscript.Access"] = { __ename__ : ["hscript","Access"], __constructs__ : ["Public","Private","Static","Inline","HasGetter","HasSetter"] }
+hscript.Access = $hxClasses["hscript.Access"] = { __ename__ : ["hscript","Access"], __constructs__ : ["Public","Private","Static","Function","HasGetter","HasSetter"] }
 hscript.Access.Public = ["Public",0];
 hscript.Access.Public.toString = $estr;
 hscript.Access.Public.__enum__ = hscript.Access;
@@ -2464,9 +1858,9 @@ hscript.Access.Private.__enum__ = hscript.Access;
 hscript.Access.Static = ["Static",2];
 hscript.Access.Static.toString = $estr;
 hscript.Access.Static.__enum__ = hscript.Access;
-hscript.Access.Inline = ["Inline",3];
-hscript.Access.Inline.toString = $estr;
-hscript.Access.Inline.__enum__ = hscript.Access;
+hscript.Access.Function = ["Function",3];
+hscript.Access.Function.toString = $estr;
+hscript.Access.Function.__enum__ = hscript.Access;
 hscript.Access.HasGetter = ["HasGetter",4];
 hscript.Access.HasGetter.toString = $estr;
 hscript.Access.HasGetter.__enum__ = hscript.Access;
@@ -3846,6 +3240,7 @@ hscript.Parser.prototype = {
 								default:
 									throw hscript.Error.EInvalidFunction;
 								}
+								field.access |= 1 << hscript.Access.Function[1];
 								break;
 							default:
 								this.unexpected(tk);
@@ -3891,7 +3286,6 @@ hscript.Parser.prototype = {
 							break;
 						case 14:
 							field.type = this.parseType();
-							canSkip = true;
 							break;
 						case 3:
 							switch(tk[2]) {
@@ -4599,6 +3993,14 @@ hscript.Parser.prototype = {
 hscript.Tools = function() { }
 $hxClasses["hscript.Tools"] = hscript.Tools;
 hscript.Tools.__name__ = ["hscript","Tools"];
+hscript.Tools.toBlock = function(e){
+	switch(e.expr[1]) {
+	case 4:
+		return e;
+	default:
+		return new hscript.Expr(hscript.ExprDef.EBlock([e]),e.pmin,e.pmax);
+	}
+}
 hscript.Tools.simplify = function(e,isVal){
 	if(isVal == null) isVal = false;
 	switch(e.expr[1]) {
@@ -4871,8 +4273,8 @@ hscript.exec.JSInterp.prototype = {
 				return $r;
 			}(this))).join(", ");
 			var gname;
-			if(name == null) gname = ""; else gname = name;
-			return "function " + gname + "(" + gargs + ") " + this.genExpr(fe);
+			if(name == null) gname = ""; else gname = "var " + name + " = ";
+			return "" + gname + "function(" + gargs + ") " + this.genBlock(fe);
 		case 10:
 			var ex = e.expr[3];
 			var cond = e.expr[2];
@@ -4969,17 +4371,61 @@ hscript.exec.JSInterp.prototype = {
 		case 25:
 			var cd = e.expr[2];
 			var constructor;
-			if(cd.constructor != null && cd.constructor.expr != null) constructor = cd.constructor.expr; else constructor = new hscript.Expr(hscript.ExprDef.EFunction([],new hscript.Expr(hscript.ExprDef.EBlock([]),e.pmin,e.pmax),null,null),e.pmin,e.pmax);
+			if(cd.constructor != null) constructor = cd.constructor.expr; else constructor = null;
+			if(constructor == null || constructor.expr == null) constructor = new hscript.Expr(hscript.ExprDef.EFunction([],new hscript.Expr(hscript.ExprDef.EBlock([]),e.pmin,e.pmax),null,null),e.pmin,e.pmax);
+			var enull = new hscript.Expr(hscript.ExprDef.EIdent("null"),e.pmin,e.pmax);
+			var ethis = new hscript.Expr(hscript.ExprDef.EIdent("this"),e.pmin,e.pmax);
 			switch(constructor.expr[1]) {
 			case 14:
 				var ret = constructor.expr[5];
 				var fe = constructor.expr[3];
 				var args = constructor.expr[2];
-				constructor.expr = hscript.ExprDef.EFunction(args,fe,cd.name,ret);
+				constructor = new hscript.Expr(hscript.ExprDef.EFunction(args,(function($this) {
+					var $r;
+					var _g1 = hscript.Tools.toBlock(fe);
+					$r = (function($this) {
+						var $r;
+						switch(_g1.expr[1]) {
+						case 4:
+							$r = (function($this) {
+								var $r;
+								var b = _g1.expr[2];
+								$r = (function($this) {
+									var $r;
+									var $it0 = cd.fields.keys();
+									while( $it0.hasNext() ) {
+										var fn = $it0.next();
+										var f = cd.fields.get(fn);
+										if(!((f.access & 1 << hscript.Access.Static[1]) != 0) && !((f.access & 1 << hscript.Access.Function[1]) != 0)) {
+											var fref = new hscript.Expr(hscript.ExprDef.EField(ethis,fn),e.pmin,e.pmax);
+											b.splice(0,0,new hscript.Expr(hscript.ExprDef.EBinop("=",fref,f.expr == null?enull:f.expr),e.pmin,e.pmax));
+										}
+									}
+									$r = new hscript.Expr(hscript.ExprDef.EBlock(b),e.pmin,e.pmax);
+									return $r;
+								}($this));
+								return $r;
+							}($this));
+							break;
+						default:
+							$r = null;
+						}
+						return $r;
+					}($this));
+					return $r;
+				}(this)),cd.name,ret),e.pmin,e.pmax);
 				break;
 			default:
 			}
-			return this.genExpr(constructor);
+			var decl = [];
+			var $it1 = cd.fields.keys();
+			while( $it1.hasNext() ) {
+				var fn = $it1.next();
+				var f = cd.fields.get(fn);
+				if((f.access & 1 << hscript.Access.Function[1]) != 0 && !((f.access & 1 << hscript.Access.Static[1]) != 0)) decl.push({ name : fn, e : f.expr == null?enull:f.expr});
+			}
+			var block = [constructor,new hscript.Expr(hscript.ExprDef.EBinop("=",new hscript.Expr(hscript.ExprDef.EField(new hscript.Expr(hscript.ExprDef.EIdent(cd.name),e.pmin,e.pmax),"prototype"),e.pmin,e.pmax),new hscript.Expr(hscript.ExprDef.EObject(decl),e.pmin,e.pmax)),e.pmin,e.pmax)];
+			return this.genExpr(new hscript.Expr(hscript.ExprDef.EBlock(block),e.pmin,e.pmax));
 		case 27:
 			var v = e.expr[2];
 			return "for(f in " + this.genValue(v) + ") window[f] = " + this.genValue(v) + "[f]";

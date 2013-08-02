@@ -74,8 +74,8 @@ class JSInterp {
 		case EBinop(op, a, b): genValue(a) + op + genValue(b);
 		case EFunction(args, fe, name, _):
 			var gargs = [for(a in args) a.name].join(", ");
-			var gname = name == null ? "" : name;
-			'function $gname($gargs) ${genExpr(fe)}';
+			var gname = name == null ? "" : 'var $name = ';
+			'${gname}function($gargs) ${genBlock(fe)}';
 		case EWhile(cond, ex):
 			'while(${genValue(cond)})${genExpr(ex)}';
 		case EParent(v): '(${genValue(v)})';
@@ -101,13 +101,38 @@ class JSInterp {
 			"{" + [for(ex in es) genExpr(ex)+";"].join("") + "}";
 		case ECall(o, as): genCall(o, as);
 		case EClassDecl(cd):
-			var constructor:Expr = cd.constructor != null && cd.constructor.expr != null ? cd.constructor.expr : new Expr(EFunction([], new Expr(EBlock([]), e.pmin, e.pmax), null, null), e.pmin, e.pmax);
+			var constructor:Expr = cd.constructor != null ? cd.constructor.expr : null;
+			if(constructor == null || constructor.expr == null)
+				constructor = new Expr(EFunction([], new Expr(EBlock([]), e.pmin, e.pmax), null, null), e.pmin, e.pmax);
+			var enull = new Expr(EIdent("null"), e.pmin, e.pmax);
+			var ethis = new Expr(EIdent("this"), e.pmin, e.pmax);
 			switch(constructor.expr) {
 				case EFunction(args, fe, _, ret):
-					constructor.expr = EFunction(args, fe, cd.name, ret);
+					constructor = new Expr(EFunction(args, switch(Tools.toBlock(fe).expr) {
+						case EBlock(b):
+							for(fn in cd.fields.keys()) {
+								var f = cd.fields.get(fn);
+								if(!f.access.has(Static) && !f.access.has(Function)) {
+									var fref = new Expr(EField(ethis, fn), e.pmin, e.pmax);
+									b.insert(0, new Expr(EBinop("=", fref, f.expr == null ? enull : f.expr), e.pmin, e.pmax));
+								}
+							};
+							new Expr(EBlock(b), e.pmin, e.pmax);
+						default: null;
+					}, cd.name, ret), e.pmin, e.pmax);
 				default:
 			}
-			genExpr(constructor);
+			var decl:Array<{name:String, e:Expr}> = [];
+			for(fn in cd.fields.keys()) {
+				var f = cd.fields.get(fn);
+				if(f.access.has(Function) && !f.access.has(Static))
+					decl.push({name: fn, e: f.expr == null ? enull : f.expr});
+			}
+			var block = [
+				constructor,
+				new Expr(EBinop("=", new Expr(EField(new Expr(EIdent(cd.name), e.pmin, e.pmax), "prototype"), e.pmin, e.pmax), new Expr(EObject(decl), e.pmin, e.pmax)), e.pmin, e.pmax)
+			];
+			genExpr(new Expr(EBlock(block), e.pmin, e.pmax));
 		case EUsing(v):
 			'for(f in ${genValue(v)}) window[f] = ${genValue(v)}[f]';
 		case ESwitch(_): genExpr(hscript.Tools.simplify(e));
