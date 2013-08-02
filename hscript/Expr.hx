@@ -38,7 +38,9 @@ enum Access {
 	Public;
 	Private;
 	Static;
-	Function;
+	Inline;
+	HasGetter;
+	HasSetter;
 }
 typedef Field = {
 	@:optional var type:CType;
@@ -48,6 +50,7 @@ typedef Field = {
 typedef ClassDecl = {
 	var name:String;
 	var fields:Map<String, Field>;
+	@:optional var constructor:Field;
 }
 enum ExprDef {
 	EConst( c : Const );
@@ -72,7 +75,7 @@ enum ExprDef {
 	EThrow( e : Expr );
 	ETry( e : Expr, v : String, t : Null<CType>, ecatch : Expr );
 	EObject( fl : Array<{ name : String, e : Expr }> );
-	ETernary( cond : Expr, e1 : Expr, e2 : Expr );
+	ETernary( cond : ExprOf<Bool>, e1 : Expr, e2 : Expr );
 	ESwitch(e : Expr,cases : Array<Case>,edef : Null<Null<Expr>>);
 	EUntyped( e:Expr);
 	EClassDecl(c:ClassDecl);
@@ -92,13 +95,16 @@ typedef Var = {
 }
 enum Error {
 	EInvalidChar( c : Int );
-	EUnexpected( s : String );
+	EUnexpected( s : String , ?could:String);
 	EUnterminatedString;
 	EUnterminatedComment;
 	EUnknownVariable( v : String );
 	EInvalidIterator( v : String );
 	EInvalidOp( op : String );
 	EInvalidAccess( f : String );
+	EInvalidFunction;
+	EInvalidParameters( f: String, givenLen:Int, actualLen:Int);
+	ENoConstructor(c:String);
 }
 
 class AtPosData<T> {

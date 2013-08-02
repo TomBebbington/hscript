@@ -148,6 +148,17 @@ class Bytes {
 			default: throw null;
 		};
 	}
+	function doEncodeField(f:Field):Void {
+		if(f.expr == null)
+			bout.addByte(255);
+		else
+			doEncode(f.expr);
+		if(f.type == null)
+			bout.addByte(255);
+		else
+			doEncodeType(f.type);
+		bout.addByte(f.access.toInt());
+	}
 
 	function doEncode( e : Expr ) {
 		bout.addByte(Type.enumIndex(e));
@@ -269,17 +280,11 @@ class Bytes {
 				for(fn in c.fields.keys()) {
 					var f = c.fields.get(fn);
 					doEncodeString(fn);
-					if(f.expr == null)
-						bout.addByte(255)
-					else
-						doEncode(f.expr);
-					if(f.type == null)
-						bout.addByte(255)
-					else
-						doEncodeType(f.type);
-					bout.addByte(f.access.toInt());
+					doEncodeField(f);
 				}
 				doEncodeString("");
+				bout.addByte(c.constructor == null ? 255 : 0);
+				doEncodeField(c.constructor);
 			case EMacro(name, args):
 				doEncodeString(name);
 				bout.addByte(args.length);
@@ -399,13 +404,10 @@ class Bytes {
 				var name = doDecodeString();
 				var fields = new Map();
 				var fn:String = "";
-				fields = [while((fn = doDecodeString()).length > 0) fn => {
-					var expr = doDecode();
-					var type = doDecodeType();
-					var access = bin.get(pin++);
-					{expr: expr, access: new haxe.EnumFlags(access), type: type};
-				}];
-				EClassDecl({name: name, fields: fields});
+				fields = [while((fn = doDecodeString()).length > 0) fn => doDecodeField()];
+				var hasConst = bin.get(pin++) != 255;
+				var const = hasConst ? doDecodeField() : null;
+				EClassDecl({name: name, fields: fields, constructor: const});
 			case 26:
 				var name = doDecodeString();
 				var len = bin.get(pin++);
@@ -419,7 +421,12 @@ class Bytes {
 				throw "Invalid code "+bin.get(pin - 1) + " AKA " + Type.getEnumConstructs(Expr)[bin.get(pin-1)];
 		}
 	}
-
+	function doDecodeField():Field {
+		var expr = doDecode();
+		var type = doDecodeType();
+		var access = bin.get(pin++);
+		return {expr: expr, access: new haxe.EnumFlags(access), type: type};
+	}
 	public static function encode<T>( e: ExprOf<T> ) : haxe.io.Bytes {
 		var b = new Bytes();
 		b.doEncode(e);

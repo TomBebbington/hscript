@@ -120,7 +120,30 @@ class Macro {
 			TAnonymous(tf);
 		};
 	}
-
+	function convertField(f:Field):haxe.macro.Expr.Field {
+		var f = cl.fields[fk];
+		var kind = null, access = [];
+		if(f.access.has(Public))
+			access.push(APublic);
+		if(f.access.has(Private))
+			access.push(APrivate);
+		if(f.access.has(Static))
+			access.push(AStatic);
+		kind = if(f.access.has(Function)) {
+			switch(f.expr) {
+				case EFunction(args, exp, name, ret):
+					FieldType.FFun({
+						ret: ret == null ? null : convertType(ret),
+						args: [for(a in args) {type: a.t == null ? null : convertType(a.t), name: a.name, opt: false}],
+						params: [],
+						expr: convert(exp)
+					});
+				default: throw "Invalid class"; 
+			}
+		} else
+			FieldType.FVar(f.type == null ? null : convertType(f.type), f.expr == null ? null : convert(f.expr));
+		return {pos: this.p, name:fk, kind: kind, access: access};
+	}
 	public function convert( e : hscript.Expr ) : Expr {
 		return { expr : switch( e  ) {
 			case EClassDecl(cl):
@@ -132,30 +155,7 @@ class Macro {
 					params: [],
 					isExtern: false,
 					kind: TypeDefKind.TDClass(),
-					fields: [for(fk in cl.fields.keys()) {
-						var f = cl.fields[fk];
-						var kind = null, access = [];
-						if(f.access.has(Public))
-							access.push(APublic);
-						if(f.access.has(Private))
-							access.push(APrivate);
-						if(f.access.has(Static))
-							access.push(AStatic);
-						if(f.access.has(Function)) {
-							switch(f.expr) {
-								case EFunction(args, exp, name, ret):
-									kind = FieldType.FFun({
-										ret: ret == null ? null : convertType(ret),
-										args: [for(a in args) {type: a.t == null ? null : convertType(a.t), name: a.name, opt: false}],
-										params: [],
-										expr: convert(exp)
-									});
-								default: throw "Invalid class"; 
-							}
-						} else
-							kind = FieldType.FVar(f.type == null ? null : convertType(f.type), f.expr == null ? null : convert(f.expr));
-						{pos: this.p, name:fk, kind: kind, access: access};
-					}]
+					fields: [for(fk in cl.fields.keys()) convertField(fk)]
 				};
 				haxe.macro.Context.defineType(td);
 				EConst(CIdent("null"));

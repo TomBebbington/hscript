@@ -1,3 +1,3 @@
 package hscript;
 
-typedef Exec = Interp;
+typedef Exec = #if js hscript.exec.JSInterp #else hscript.exec.Interp #end;

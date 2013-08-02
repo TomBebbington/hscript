@@ -109,15 +109,9 @@ class Parser {
 			["||"],
 			["=","+=","-=","*=","/=","%=","<<=",">>=",">>>=","|=","&=","^="],
 		];
-		#if haxe3
 		opPriority = new Map();
 		opRightAssoc = new Map();
 		unops = new Map();
-		#else
-		opPriority = new Hash();
-		opRightAssoc = new Hash();
-		unops = new Hash();
-		#end
 		for( i in 0...priorities.length )
 			for( x in priorities[i] ) {
 				opPriority.set(x, i);
@@ -128,19 +122,7 @@ class Parser {
 	}
 
 	public function error( err:Error, pmin:Int, pmax:Int ) {
-		var errs = switch(err) {
-			case EUnterminatedString: "String is not terminated. Did you forget to add a closing quote?";
-			case EUnterminatedComment: "Comment not terminated.";
-			case EUnknownVariable(v): 'Unknown variable "$v"';
-			case EUnexpected("}"): 'Semicolon expected';
-			case EUnexpected(s): 'Unexpected $s';
-			case EInvalidOp(op): 'Invalid operation $op';
-			case EInvalidIterator(v): 'Invalid iterator $v';
-			case EInvalidChar(c): 'Invalid char "${String.fromCharCode(c)}"';
-			case EInvalidAccess(f): 'Cannot access $f';
-		};
-		var otherInfo = haxe.CallStack.toString(haxe.CallStack.exceptionStack());
-		throw '$errs at $pmin-$pmax\n$otherInfo';
+		throw err;
 	}
 
 	public function invalidChar(c) {
@@ -182,11 +164,11 @@ class Parser {
 	}
 
 	function unexpected( tk , ?info:String) : Dynamic {
-		error(EUnexpected(tokenString(tk) + (info == null?"":" - expected " + info)),tokenMin,tokenMax);
+		error(EUnexpected("'"+tokenString(tk) + "'"+(info == null?"":" - expected " + info)),tokenMin,tokenMax);
 		return null;
 	}
 
-	inline function push(tk) {
+	function push(tk) {
 		#if hscriptPos
 		tokens.push( { t : tk, min : tokenMin, max : tokenMax } );
 		tokenMin = oldTokenMin;
@@ -453,23 +435,39 @@ class Parser {
 								case TId(s): s;
 								case all: unexpected(all);
 							}
+							case TPOpen if(name != null):
+								switch(tk = token()) {
+									case TId("get"): field.access.set(HasGetter);
+									case TId("never"|"null"):
+									default: unexpected(tk);
+								};
+								ensure(TComma);
+								switch(tk = token()) {
+									case TId("set"): field.access.set(HasSetter);
+									case TId("never"|"null"):
+									default: unexpected(tk);
+								};
+								ensure(TPClose);
 							case TDoubleDot: field.type = parseType(); canSkip = true;
 							case TId("function"):
-								field.access.set(Access.Function);
 								push(tk);
 								field.expr = parseExpr();
 								switch(field.expr) {
-									case EFunction(a, b, n, c): name = n;
+									case EFunction(a, b, n, c):
+										name = n;
 										field.expr = EFunction(a, b, null, c);
-									case all: trace(all);
+									case all: throw EInvalidFunction;
 								};
 							case TOp("="): field.expr = parseExpr();
 							case TSemicolon: break;
 							default: unexpected(tk);
 						}
+						if(name != null)
+							if(name == "new")
+								cd.constructor = field;
+							else
+								cd.fields.set(name, field);
 					}
-					if(name != null)
-						cd.fields.set(name, field);
 				};
 				mk(EClassDecl(cd), p1, tokenMax);
 			case "if":
