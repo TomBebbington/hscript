@@ -106,6 +106,7 @@ class JSInterp {
 				constructor = new Expr(EFunction([], new Expr(EBlock([]), e.pmin, e.pmax), null, null), e.pmin, e.pmax);
 			var enull = new Expr(EIdent("null"), e.pmin, e.pmax);
 			var ethis = new Expr(EIdent("this"), e.pmin, e.pmax);
+			var cexpr = new Expr(EIdent(cd.name), e.pmin, e.pmax);
 			switch(constructor.expr) {
 				case EFunction(args, fe, _, ret):
 					constructor = new Expr(EFunction(args, switch(Tools.toBlock(fe).expr) {
@@ -130,9 +131,20 @@ class JSInterp {
 			}
 			var block = [
 				constructor,
-				new Expr(EBinop("=", new Expr(EField(new Expr(EIdent(cd.name), e.pmin, e.pmax), "prototype"), e.pmin, e.pmax), new Expr(EObject(decl), e.pmin, e.pmax)), e.pmin, e.pmax)
+				new Expr(EBinop("=", new Expr(EField(cexpr, "prototype"), e.pmin, e.pmax), new Expr(EObject(decl), e.pmin, e.pmax)), e.pmin, e.pmax)
 			];
-			genExpr(new Expr(EBlock(block), e.pmin, e.pmax));
+			for(fn in cd.fields.keys()) {
+				var f = cd.fields.get(fn);
+				var fex:Expr = new Expr(EField(new Expr(EIdent(cd.name), e.pmin, e.pmax), fn), e.pmin, e.pmax);
+				if(f.access.has(Static) && f.access.has(HasGetter)) {
+					var propdecl = [{name: "get", e: cd.fields['get_$fn'].expr}];
+					block.push(new Expr(ECall(new Expr(EField(new Expr(EIdent("Object"), e.pmin, e.pmax), "defineProperty"), e.pmin, e.pmax), [cexpr, new Expr(EConst(CString(fn)), e.pmin, e.pmax), new Expr(EObject(propdecl), e.pmin, e.pmax)]), e.pmin, e.pmax));
+				} else if(f.access.has(Static) && !StringTools.startsWith(fn, "get_"))
+					block.push(new Expr(EBinop("=", fex, f.expr == null ? enull : f.expr), e.pmin, e.pmax));
+			}
+			var nexpr = new Expr(EBlock(block), e.pmin, e.pmax);
+			trace(hscript.Tools.toString(nexpr));
+			genExpr(nexpr);
 		case EUsing(v):
 			'for(f in ${genValue(v)}) window[f] = ${genValue(v)}[f]';
 		case ESwitch(_): genExpr(hscript.Tools.simplify(e));

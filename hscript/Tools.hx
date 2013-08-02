@@ -1,6 +1,62 @@
 package hscript;
 import hscript.Expr;
 class Tools {
+	public static function toString(e:Expr):String {return switch(e.expr) {
+		case EWhile(cond, loop): "while("+toString(cond)+")"+toString(e);
+		case EVars(vs): "var "+[for(v in vs) v.name + (v.expr == null ? "" : " = "+toString(v.expr))].join(", ");
+		case EUsing(v): "using "+toString(v);
+		case EUntyped(v): "untyped "+toString(v);
+		case EUnop(op, true, ve): op + toString(ve);
+		case EUnop(op, _, ve): toString(ve) + op;
+		case ETry(exp, v, ty, catche):
+			"try "+toString(exp)+" catch("+v+")"+toString(catche);
+		case EThrow(v): "throw "+toString(v);
+		case ETernary(cond, a, b): toString(cond) + "?" + toString(a) + ":" + toString(b);
+		case ESwitch(v, cases, def):
+			var str = "switch("+toString(v)+") {";
+			for(c in cases) {
+				str += "case " + c.values.map(toString).join("|");
+				if(c.guard != null)
+					str += " if("+toString(c.guard)+")";
+				str += ":";
+				if(c.expr != null)
+					str += toString(c.expr)+";";
+			}
+			if(def != null)
+				str += "default:"+toString(def)+";";
+			str += "}";
+		case EReturn(v): "return "+toString(v);
+		case EParent(v): "("+toString(v)+")";
+		case EObject(fs):
+			var fmapped = [for(f in fs) '${f.name}: ${f.e==null?"null":toString(f.e)}'];
+			"{"+fmapped.join(", ")+"}";
+		case EIf(cond, thene, elsee):
+			var str:String = "if("+toString(cond)+")"+toString(thene);
+			if(elsee != null) str += " else "+toString(elsee);
+			str;
+		case EIdent(s): s;
+		case EFunction(args, fe, name, ret):
+			"function "+(name == null ? "" : name)+"("+[for(a in args) a.name].join(", ")+")"+toString(fe);
+		case EMacro(name, args):
+			"#"+name+[for(a in args) ' $a'].join("");
+		case EContinue: "continue";
+		case EBreak: "break";
+		case EBlock(bs):
+			"{"+[for(b in bs) toString(b)+";"].join("")+"}";
+		case EConst(CInt(i)): Std.string(i);
+		case EConst(CString(s)): '"$s"';
+		case EConst(CFloat(f)): Std.string(f);
+		case EFor(v, ite, fe): "for("+v+" in "+toString(ite)+")"+toString(fe);
+		case EField(fe, f): toString(fe) + "." + f;
+		case EBinop(op, a, b): toString(a) + op + toString(b);
+		case EArrayDecl(as): "["+[for(a in as) toString(a)].join(", ")+"]";
+		case EArray(a, i): toString(a) + "["+i+"]";
+		case ECall(func, args):
+			toString(func) + "(" + args.map(toString).join(", ") + ")";
+		case EClassDecl(cd):
+			'class ${cd.name} {}';
+		case ENew(cl, ps): 'new $cl('+ps.map(toString).join(", ")+")";
+	};}
 	public static function toBlock(e:Expr):Expr {
 		return switch(e.expr) {
 			case EBlock(_): e;

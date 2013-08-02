@@ -35,6 +35,8 @@ class Test {
 					case ENoConstructor(cl): '$cl does not have a constructor';
 				};
 				print('Error: $str');
+			} catch(e:Dynamic) {
+				print('Unexpected error: $e');
 			}
 		}
 		//new haxe.Timer(30).run = runScript;

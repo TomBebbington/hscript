@@ -379,8 +379,9 @@ Test.main = function(){
 		try {
 			var e = new hscript.Parser().parseString(content);
 			new hscript.exec.JSInterp().execute(e);
-		} catch( err ) {
-			if( js.Boot.__instanceof(err,hscript.Error) ) {
+		} catch( $e0 ) {
+			if( js.Boot.__instanceof($e0,hscript.Error) ) {
+				var err = $e0;
 				var str;
 				switch(err[1]) {
 				case 2:
@@ -434,7 +435,10 @@ Test.main = function(){
 					break;
 				}
 				haxe.Log.trace("Error: " + str,null);
-			} else throw(err);
+			} else {
+			var e = $e0;
+			haxe.Log.trace("Unexpected error: " + Std.string(e),null);
+			}
 		}
 	};
 	js.Browser.window.onload = function(_){
@@ -3993,6 +3997,220 @@ hscript.Parser.prototype = {
 hscript.Tools = function() { }
 $hxClasses["hscript.Tools"] = hscript.Tools;
 hscript.Tools.__name__ = ["hscript","Tools"];
+hscript.Tools.toString = function(e){
+	switch(e.expr[1]) {
+	case 10:
+		var loop = e.expr[3];
+		var cond = e.expr[2];
+		return "while(" + hscript.Tools.toString(cond) + ")" + hscript.Tools.toString(e);
+	case 2:
+		var vs = e.expr[2];
+		return "var " + ((function($this) {
+			var $r;
+			var _g = [];
+			{
+				var _g1 = 0;
+				while(_g1 < vs.length) {
+					var v = vs[_g1];
+					++_g1;
+					_g.push(v.name + (v.expr == null?"":" = " + hscript.Tools.toString(v.expr)));
+				}
+			}
+			$r = _g;
+			return $r;
+		}(this))).join(", ");
+	case 27:
+		var v = e.expr[2];
+		return "using " + hscript.Tools.toString(v);
+	case 24:
+		var v = e.expr[2];
+		return "untyped " + hscript.Tools.toString(v);
+	case 7:
+		switch(e.expr[3]) {
+		case true:
+			var ve = e.expr[4];
+			var op = e.expr[2];
+			return op + hscript.Tools.toString(ve);
+		default:
+			var ve = e.expr[4];
+			var op = e.expr[2];
+			return hscript.Tools.toString(ve) + op;
+		}
+		break;
+	case 20:
+		var catche = e.expr[5];
+		var ty = e.expr[4];
+		var v = e.expr[3];
+		var exp = e.expr[2];
+		return "try " + hscript.Tools.toString(exp) + " catch(" + v + ")" + hscript.Tools.toString(catche);
+	case 19:
+		var v = e.expr[2];
+		return "throw " + hscript.Tools.toString(v);
+	case 22:
+		var b = e.expr[4];
+		var a = e.expr[3];
+		var cond = e.expr[2];
+		return hscript.Tools.toString(cond) + "?" + hscript.Tools.toString(a) + ":" + hscript.Tools.toString(b);
+	case 23:
+		var def = e.expr[4];
+		var cases = e.expr[3];
+		var v = e.expr[2];
+		var str = "switch(" + hscript.Tools.toString(v) + ") {";
+		var _g = 0;
+		while(_g < cases.length) {
+			var c = cases[_g];
+			++_g;
+			str += "case " + c.values.map(hscript.Tools.toString).join("|");
+			if(c.guard != null) str += " if(" + hscript.Tools.toString(c.guard) + ")";
+			str += ":";
+			if(c.expr != null) str += hscript.Tools.toString(c.expr) + ";";
+		}
+		if(def != null) str += "default:" + hscript.Tools.toString(def) + ";";
+		return str += "}";
+	case 15:
+		var v = e.expr[2];
+		return "return " + hscript.Tools.toString(v);
+	case 3:
+		var v = e.expr[2];
+		return "(" + hscript.Tools.toString(v) + ")";
+	case 21:
+		var fs = e.expr[2];
+		var fmapped;
+		var _g = [];
+		var _g1 = 0;
+		while(_g1 < fs.length) {
+			var f = fs[_g1];
+			++_g1;
+			_g.push("" + f.name + ": " + (f.e == null?"null":hscript.Tools.toString(f.e)));
+		}
+		fmapped = _g;
+		return "{" + fmapped.join(", ") + "}";
+	case 9:
+		var elsee = e.expr[4];
+		var thene = e.expr[3];
+		var cond = e.expr[2];
+		var str = "if(" + hscript.Tools.toString(cond) + ")" + hscript.Tools.toString(thene);
+		if(elsee != null) str += " else " + hscript.Tools.toString(elsee);
+		return str;
+	case 1:
+		var s = e.expr[2];
+		return s;
+	case 14:
+		var ret = e.expr[5];
+		var name = e.expr[4];
+		var fe = e.expr[3];
+		var args = e.expr[2];
+		return "function " + (name == null?"":name) + "(" + ((function($this) {
+			var $r;
+			var _g = [];
+			{
+				var _g1 = 0;
+				while(_g1 < args.length) {
+					var a = args[_g1];
+					++_g1;
+					_g.push(a.name);
+				}
+			}
+			$r = _g;
+			return $r;
+		}(this))).join(", ") + ")" + hscript.Tools.toString(fe);
+	case 26:
+		var args = e.expr[3];
+		var name = e.expr[2];
+		return "#" + name + ((function($this) {
+			var $r;
+			var _g = [];
+			{
+				var _g1 = 0;
+				while(_g1 < args.length) {
+					var a = args[_g1];
+					++_g1;
+					_g.push(" " + a);
+				}
+			}
+			$r = _g;
+			return $r;
+		}(this))).join("");
+	case 13:
+		return "continue";
+	case 12:
+		return "break";
+	case 4:
+		var bs = e.expr[2];
+		return "{" + ((function($this) {
+			var $r;
+			var _g = [];
+			{
+				var _g1 = 0;
+				while(_g1 < bs.length) {
+					var b = bs[_g1];
+					++_g1;
+					_g.push(hscript.Tools.toString(b) + ";");
+				}
+			}
+			$r = _g;
+			return $r;
+		}(this))).join("") + "}";
+	case 0:
+		switch(e.expr[2][1]) {
+		case 0:
+			var i = e.expr[2][2];
+			return Std.string(i);
+		case 2:
+			var s = e.expr[2][2];
+			return "\"" + s + "\"";
+		case 1:
+			var f = e.expr[2][2];
+			return Std.string(f);
+		}
+		break;
+	case 11:
+		var fe = e.expr[4];
+		var ite = e.expr[3];
+		var v = e.expr[2];
+		return "for(" + v + " in " + hscript.Tools.toString(ite) + ")" + hscript.Tools.toString(fe);
+	case 5:
+		var f = e.expr[3];
+		var fe = e.expr[2];
+		return hscript.Tools.toString(fe) + "." + f;
+	case 6:
+		var b = e.expr[4];
+		var a = e.expr[3];
+		var op = e.expr[2];
+		return hscript.Tools.toString(a) + op + hscript.Tools.toString(b);
+	case 17:
+		var $as = e.expr[2];
+		return "[" + ((function($this) {
+			var $r;
+			var _g = [];
+			{
+				var _g1 = 0;
+				while(_g1 < $as.length) {
+					var a = $as[_g1];
+					++_g1;
+					_g.push(hscript.Tools.toString(a));
+				}
+			}
+			$r = _g;
+			return $r;
+		}(this))).join(", ") + "]";
+	case 16:
+		var i = e.expr[3];
+		var a = e.expr[2];
+		return hscript.Tools.toString(a) + "[" + Std.string(i) + "]";
+	case 8:
+		var args = e.expr[3];
+		var func = e.expr[2];
+		return hscript.Tools.toString(func) + "(" + args.map(hscript.Tools.toString).join(", ") + ")";
+	case 25:
+		var cd = e.expr[2];
+		return "class " + cd.name + " {}";
+	case 18:
+		var ps = e.expr[3];
+		var cl = e.expr[2];
+		return "new " + cl + "(" + ps.map(hscript.Tools.toString).join(", ") + ")";
+	}
+}
 hscript.Tools.toBlock = function(e){
 	switch(e.expr[1]) {
 	case 4:
@@ -4375,6 +4593,7 @@ hscript.exec.JSInterp.prototype = {
 			if(constructor == null || constructor.expr == null) constructor = new hscript.Expr(hscript.ExprDef.EFunction([],new hscript.Expr(hscript.ExprDef.EBlock([]),e.pmin,e.pmax),null,null),e.pmin,e.pmax);
 			var enull = new hscript.Expr(hscript.ExprDef.EIdent("null"),e.pmin,e.pmax);
 			var ethis = new hscript.Expr(hscript.ExprDef.EIdent("this"),e.pmin,e.pmax);
+			var cexpr = new hscript.Expr(hscript.ExprDef.EIdent(cd.name),e.pmin,e.pmax);
 			switch(constructor.expr[1]) {
 			case 14:
 				var ret = constructor.expr[5];
@@ -4424,8 +4643,20 @@ hscript.exec.JSInterp.prototype = {
 				var f = cd.fields.get(fn);
 				if((f.access & 1 << hscript.Access.Function[1]) != 0 && !((f.access & 1 << hscript.Access.Static[1]) != 0)) decl.push({ name : fn, e : f.expr == null?enull:f.expr});
 			}
-			var block = [constructor,new hscript.Expr(hscript.ExprDef.EBinop("=",new hscript.Expr(hscript.ExprDef.EField(new hscript.Expr(hscript.ExprDef.EIdent(cd.name),e.pmin,e.pmax),"prototype"),e.pmin,e.pmax),new hscript.Expr(hscript.ExprDef.EObject(decl),e.pmin,e.pmax)),e.pmin,e.pmax)];
-			return this.genExpr(new hscript.Expr(hscript.ExprDef.EBlock(block),e.pmin,e.pmax));
+			var block = [constructor,new hscript.Expr(hscript.ExprDef.EBinop("=",new hscript.Expr(hscript.ExprDef.EField(cexpr,"prototype"),e.pmin,e.pmax),new hscript.Expr(hscript.ExprDef.EObject(decl),e.pmin,e.pmax)),e.pmin,e.pmax)];
+			var $it2 = cd.fields.keys();
+			while( $it2.hasNext() ) {
+				var fn = $it2.next();
+				var f = cd.fields.get(fn);
+				var fex = new hscript.Expr(hscript.ExprDef.EField(new hscript.Expr(hscript.ExprDef.EIdent(cd.name),e.pmin,e.pmax),fn),e.pmin,e.pmax);
+				if((f.access & 1 << hscript.Access.Static[1]) != 0 && (f.access & 1 << hscript.Access.HasGetter[1]) != 0) {
+					var propdecl = [{ name : "get", e : cd.fields.get("get_" + fn).expr}];
+					block.push(new hscript.Expr(hscript.ExprDef.ECall(new hscript.Expr(hscript.ExprDef.EField(new hscript.Expr(hscript.ExprDef.EIdent("Object"),e.pmin,e.pmax),"defineProperty"),e.pmin,e.pmax),[cexpr,new hscript.Expr(hscript.ExprDef.EConst(hscript.Const.CString(fn)),e.pmin,e.pmax),new hscript.Expr(hscript.ExprDef.EObject(propdecl),e.pmin,e.pmax)]),e.pmin,e.pmax));
+				} else if((f.access & 1 << hscript.Access.Static[1]) != 0 && !StringTools.startsWith(fn,"get_")) block.push(new hscript.Expr(hscript.ExprDef.EBinop("=",fex,f.expr == null?enull:f.expr),e.pmin,e.pmax));
+			}
+			var nexpr = new hscript.Expr(hscript.ExprDef.EBlock(block),e.pmin,e.pmax);
+			haxe.Log.trace(hscript.Tools.toString(nexpr),{ fileName : "JSInterp.hx", lineNumber : 146, className : "hscript.exec.JSInterp", methodName : "genExpr"});
+			return this.genExpr(nexpr);
 		case 27:
 			var v = e.expr[2];
 			return "for(f in " + this.genValue(v) + ") window[f] = " + this.genValue(v) + "[f]";
