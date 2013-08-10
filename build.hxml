@@ -1,4 +1,6 @@
--js test/hscript.js
+-neko run.n
 -main Test
 -dce no
 -cp test
+-cmd neko run.n
+-debug

@@ -136,8 +136,18 @@ class JSInterp {
 			for(fn in cd.fields.keys()) {
 				var f = cd.fields.get(fn);
 				var fex:Expr = new Expr(EField(new Expr(EIdent(cd.name), e.pmin, e.pmax), fn), e.pmin, e.pmax);
-				if(f.access.has(Static) && f.access.has(HasGetter)) {
-					var propdecl = [{name: "get", e: cd.fields['get_$fn'].expr}];
+				if(f.access.has(Static) && (f.access.has(HasGetter) || f.access.has(HasSetter))) {
+					var hasGetter = f.access.has(HasGetter), hasSetter = f.access.has(HasSetter);
+					var propdecl = [];
+					if(hasGetter)
+						propdecl.push({name: "get_`", e: cd.fields['get_$fn'].expr});
+					if(hasSetter)
+						propdecl.push({name: "set", e: Tools.map(cd.fields['set_$fn'].expr, function(e) {
+							return switch(e.expr) {
+								case EReturn(v) if(v != null): new Expr(EBinop("=", fex, v), e.pmin, e.pmax);
+								default: e;
+							};
+						})});
 					block.push(new Expr(ECall(new Expr(EField(new Expr(EIdent("Object"), e.pmin, e.pmax), "defineProperty"), e.pmin, e.pmax), [cexpr, new Expr(EConst(CString(fn)), e.pmin, e.pmax), new Expr(EObject(propdecl), e.pmin, e.pmax)]), e.pmin, e.pmax));
 				} else if(f.access.has(Static) && !StringTools.startsWith(fn, "get_"))
 					block.push(new Expr(EBinop("=", fex, f.expr == null ? enull : f.expr), e.pmin, e.pmax));

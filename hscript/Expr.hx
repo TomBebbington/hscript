@@ -48,10 +48,15 @@ typedef Field = {
 	var access:haxe.EnumFlags<Access>;
 }
 typedef ClassDecl = {
-	var pack:Array<String>;
 	var name:String;
+	var pack:Array<String>;
 	var fields:Map<String, Field>;
 	@:optional var constructor:Field;
+}
+typedef EnumConst = Array<{name: String, ?type: CType}>;
+typedef EnumDecl = {
+	var name:String;
+	var constructors:Map<String, EnumConst>;
 }
 enum ExprDef {
 	EConst( c : Const );
@@ -82,6 +87,7 @@ enum ExprDef {
 	EClassDecl(c:ClassDecl);
 	EMacro( n:String, args:Array<String> );
 	EUsing(e:Expr);
+	EEnumDecl(e:EnumDecl);
 }
 enum CType {
 	CTPath( path : Array<String>, ?params : Array<CType> );
@@ -94,7 +100,7 @@ typedef Var = {
 	@:optional var expr:Expr;
 	@:optional var type:CType;
 }
-enum Error {
+enum ErrorDef {
 	EInvalidChar( c : Int );
 	EUnexpected( s : String , ?could:String);
 	EUnterminatedString;
@@ -106,6 +112,20 @@ enum Error {
 	EInvalidFunction;
 	EInvalidParameters( f: String, givenLen:Int, actualLen:Int);
 	ENoConstructor(c:String);
+}
+
+class Error {
+	public var error:ErrorDef;
+	public var pmin(default, null):Int;
+	public var pmax(default, null):Int;
+	public function new(e:ErrorDef, pmin:Int, pmax:Int) {
+		this.error = e;
+		this.pmin = pmin;
+		this.pmax = pmax;
+	}
+	public static inline function with(ex:ErrorDef, e:Expr):Error {
+		return new Error(ex, e.pmin, e.pmax);
+	}
 }
 
 class Expr {

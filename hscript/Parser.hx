@@ -122,8 +122,8 @@ class Parser {
 			unops.set(x, x == "++" || x == "--");
 	}
 
-	public function error( err:Error, pmin:Int, pmax:Int ) {
-		throw err;
+	public function error( err:ErrorDef, pmin:Int, pmax:Int ) {
+		throw new Error(err, pmin, pmax);
 	}
 
 	public function invalidChar(c) {
@@ -191,7 +191,7 @@ class Parser {
 
 	function isBlock(e) {
 		return switch(e.expr) {
-			case EClassDecl(_): true;
+			case EClassDecl(_) | EEnumDecl(_): true;
 			case EMacro(_, _): true;
 			case EBlock(_), EObject(_): true;
 			case EFunction(_,e,_,_): isBlock(e);
@@ -236,8 +236,8 @@ class Parser {
 				if( !allowJSON )
 					unexpected(tk);
 				switch( c ) {
-				case CString(s): id = s;
-				default: unexpected(tk);
+					case CString(s): id = s;
+					default: unexpected(tk);
 				}
 			case TBrClose:
 				break;
@@ -259,9 +259,7 @@ class Parser {
 	}
 	function parseExpr() {
 		var tk = token();
-		#if hscriptPos
 		var p1 = tokenMin;
-		#end
 		switch( tk ) {
 		case TInterp(s):
 			var is = parseInterpolatedString(s);
@@ -381,8 +379,36 @@ class Parser {
 	function parseStructure(id) {
 		var p1 = tokenMin;
 		return switch( id ) {
+			case "enum":
+				var name:String = switch(token()) {
+					case TId(s): s;
+					case all: unexpected(all);
+				};
+				var ed:EnumDecl = {
+					name: name,
+					constructors: new Map()
+				};
+				ensure(TBrOpen);
+				var tk = null;
+				var cf:EnumConst = [];
+				var name = null;
+				var inParams = false;
+				while((tk = token()) != Token.TBrClose) {
+					switch(tk) {
+						case TId(nm) if(name == null): name = nm;
+						case TId(nm) if(inParams): cf.push({name: nm});
+						case TDoubleDot if(inParams && cf.length > 0): cf[cf.length-1].type = parseType();
+						case TPOpen if(name != null): inParams = true;
+						case TPClose if(inParams): inParams = false;
+						case TSemicolon if(!inParams):
+							ed.constructors.set(name, cf);
+							name = null;
+							cf = [];
+						default: unexpected(tk);
+					};
+				}
+				mk(EEnumDecl(ed));
 			case "class":
-				trace(currentPackage);
 				var name:String = switch(token()) {
 					case TId(s): s;
 					case all: unexpected(all);
