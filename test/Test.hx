@@ -5,10 +5,8 @@ import hscript.Expr;
 class Test {
 	static inline function print(s:String) haxe.Log.trace(s, null);
 	static function main():Void {
-		trace([].iterator());
 		var run:ButtonElement = null, source:TextAreaElement = null, output:DivElement = null;
 		var txt:Dynamic = null;
-		haxe.Timer.stamp;
 		function clear()
 			output.textContent = "";
 		function runScript() {
@@ -39,7 +37,6 @@ class Test {
 				print('Unexpected error: $e');
 			}
 		}
-		//new haxe.Timer(30).run = runScript;
 		window.onload = function(_) {
 			run = cast document.getElementById("run");
 			source = cast document.getElementById("editor");
