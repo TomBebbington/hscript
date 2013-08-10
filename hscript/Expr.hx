@@ -48,6 +48,7 @@ typedef Field = {
 	var access:haxe.EnumFlags<Access>;
 }
 typedef ClassDecl = {
+	var pack:Array<String>;
 	var name:String;
 	var fields:Map<String, Field>;
 	@:optional var constructor:Field;

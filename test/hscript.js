@@ -1914,6 +1914,7 @@ hscript.Parser = function() {
 	this.line = 1;
 	this.opChars = "+*/-=!><&|^%~";
 	this.identChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_";
+	this.currentPackage = [];
 	var priorities = [["%"],["*","/"],["+","-"],["<<",">>",">>>"],["|","&","^"],["==","!=",">","<",">=","<="],["..."],["&&"],["||"],["=","+=","-=","*=","/=","%=","<<=",">>=",">>>=","|=","&=","^="]];
 	this.opPriority = new haxe.ds.StringMap();
 	this.opRightAssoc = new haxe.ds.StringMap();
@@ -3169,7 +3170,7 @@ hscript.Parser.prototype = {
 						}($this));
 						return $r;
 					}($this));
-					var cd = { name : name, fields : new haxe.ds.StringMap()};
+					var cd = { pack : $this.currentPackage, name : name, fields : new haxe.ds.StringMap()};
 					$this.ensure(hscript.Token.TBrOpen);
 					var tk = null;
 					while(tk != hscript.Token.TBrClose) {
@@ -3753,6 +3754,29 @@ hscript.Parser.prototype = {
 					return $r;
 				}($this));
 				break;
+			case "package":
+				$r = (function($this) {
+					var $r;
+					var pckg = [];
+					var tk = null;
+					while((tk = $this.token()) != hscript.Token.TSemicolon) {
+						var $e = (tk);
+						switch( $e[1] ) {
+						case 2:
+							var id1 = $e[2];
+							pckg.push(id1);
+							$this.ensure(hscript.Token.TDot);
+							break;
+						default:
+							$this.unexpected(tk);
+						}
+					}
+					$this.push(tk);
+					$this.currentPackage = pckg;
+					$r = $this.mk(hscript.ExprDef.EBlock([]),0,0);
+					return $r;
+				}($this));
+				break;
 			default:
 				$r = null;
 			}
@@ -4114,6 +4138,7 @@ hscript.Parser.prototype = {
 	,'char': null
 	,input: null
 	,allowJSON: null
+	,currentPackage: null
 	,unops: null
 	,opRightAssoc: null
 	,opPriority: null

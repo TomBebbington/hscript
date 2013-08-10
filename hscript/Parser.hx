@@ -60,7 +60,7 @@ class Parser {
 	public var opRightAssoc : Hash<Bool>;
 	public var unops : Hash<Bool>; // true if allow postfix
 	#end
-	
+	public var currentPackage : Array<String>;
 	/**
 		activate JSON compatiblity
 	**/
@@ -97,6 +97,7 @@ class Parser {
 		line = 1;
 		opChars = "+*/-=!><&|^%~";
 		identChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_";
+		currentPackage = [];
 		var priorities = [
 			["%"],
 			["*", "/"],
@@ -388,6 +389,7 @@ class Parser {
 					case all: unexpected(all);
 				};
 				var cd:ClassDecl = {
+					pack: currentPackage,
 					name: name,
 					fields: new Map()
 				};
@@ -677,6 +679,20 @@ class Parser {
 				ensure(TPClose);
 				var ec = parseExpr();
 				mk(ETry(e,vname,t,ec),p1,ec.pmax);
+			case "package":
+				var pckg:Array<String> = [];
+				var tk = null;
+				while((tk = token()) != TSemicolon) {
+					switch(tk) {
+						case TId(id):
+							pckg.push(id);
+							ensure(TDot);
+						default: unexpected(tk);
+					}
+				}
+				push(tk);
+				this.currentPackage = pckg;
+				mk(EBlock([]), p1, p1);
 			default:
 				null;
 		}
