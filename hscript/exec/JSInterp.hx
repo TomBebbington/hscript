@@ -143,7 +143,6 @@ class JSInterp {
 					block.push(new Expr(EBinop("=", fex, f.expr == null ? enull : f.expr), e.pmin, e.pmax));
 			}
 			var nexpr = new Expr(EBlock(block), e.pmin, e.pmax);
-			trace(hscript.Tools.toString(nexpr));
 			genExpr(nexpr);
 		case EUsing(v):
 			'for(f in ${genValue(v)}) window[f] = ${genValue(v)}[f]';

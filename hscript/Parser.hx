@@ -379,11 +379,10 @@ class Parser {
 	}
 
 	function parseStructure(id) {
-		#if hscriptPos
 		var p1 = tokenMin;
-		#end
 		return switch( id ) {
 			case "class":
+				trace(currentPackage);
 				var name:String = switch(token()) {
 					case TId(s): s;
 					case all: unexpected(all);
@@ -681,12 +680,14 @@ class Parser {
 				mk(ETry(e,vname,t,ec),p1,ec.pmax);
 			case "package":
 				var pckg:Array<String> = [];
-				var tk = null;
+				var tk = null, shouldDot = false;
 				while((tk = token()) != TSemicolon) {
 					switch(tk) {
 						case TId(id):
 							pckg.push(id);
-							ensure(TDot);
+							shouldDot = true;
+						case TDot if(shouldDot):
+
 						default: unexpected(tk);
 					}
 				}
