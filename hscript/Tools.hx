@@ -57,8 +57,6 @@ class Tools {
 		case EIdent(s): s;
 		case EFunction(args, fe, name, ret):
 			"function "+(name == null ? "" : name)+"("+[for(a in args) a.name].join(", ")+")"+toString(fe);
-		case EMacro(name, args):
-			"#"+name+[for(a in args) ' $a'].join("");
 		case EContinue: "continue";
 		case EBreak: "break";
 		case EBlock(bs):
@@ -137,7 +135,7 @@ class Tools {
 			case ETry(te, v, vt, ve): ETry(map(te, f), v, vt, map(ve, f));
 			case ETernary(cond, a, b): ETernary(map(cond, f), map(a, f), map(b, f));
 			case EParent(v): EParent(map(v, f));
-			case EIdent(_) | EContinue | EConst(_) | EReturn(_) | EMacro(_) | EEnumDecl(_): e.expr;
+			case EIdent(_) | EContinue | EConst(_) | EReturn(_) | EEnumDecl(_): e.expr;
 			case EBlock(es): EBlock([for(e in es) map(e, f)]);
 			case EArrayDecl(es): EArrayDecl([for(e in es) map(e, f)]);
 			case EField(ex, ff): EField(map(ex, f), ff);

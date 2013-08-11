@@ -242,8 +242,6 @@ class Interp {
 				var v = expr(e);
 				for(f in Reflect.fields(v))
 					usings.set(f, Reflect.field(v, f));
-			case EMacro(n, args):
-				trace('$n:$args');
 			case EClassDecl(c):
 				var o:Dynamic = {};
 				var pack:Dynamic = null;
@@ -592,13 +590,12 @@ class Interp {
 	}
 
 	function get(o:Dynamic, f:String, e:Expr):Dynamic {
-		//trace(Reflect.fields(o));
 		var v = if(o == null) throw Error.with(EInvalidAccess(f), e);
 		else if(f == "code" && Std.is(o, String)) o.charCodeAt(0);
 		else if(Std.is(o, Enum))
 			Type.createEnum(o, f, []);
 		else {
-			var v:Dynamic = Reflect.field(o,f);
+			var v:Dynamic = Reflect.getProperty(o,f);
 			if(v != null && v == Prop)
 				v = fcall(o, 'get_$f', []);
 			v;

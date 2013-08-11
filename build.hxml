@@ -4,3 +4,7 @@
 -cp test
 -cmd neko run.n
 -debug
+--next
+-main Test
+-cp test
+-js test/hscript.js

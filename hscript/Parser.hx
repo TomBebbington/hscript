@@ -192,7 +192,6 @@ class Parser {
 	function isBlock(e) {
 		return switch(e.expr) {
 			case EClassDecl(_) | EEnumDecl(_): true;
-			case EMacro(_, _): true;
 			case EBlock(_), EObject(_): true;
 			case EFunction(_,e,_,_): isBlock(e);
 			case EVars([]): false;
@@ -216,10 +215,6 @@ class Parser {
 				push(tk);
 			else
 				unexpected(tk);
-		} else switch(e.expr) {
-			case EMacro(_, _):
-				push(tk);
-			default:
 		}
 		return e;
 	}
@@ -265,18 +260,22 @@ class Parser {
 			var is = parseInterpolatedString(s);
 			return parseExprNext(is);
 		case THash:
-			var name = switch(token()) {
+			var tk = null;
+			var name = switch(tk = token()) {
 				case TId(s): s;
-				default: null;
+				default: unexpected(tk);
 			};
-			var args = switch(name) {
-				case "if" | "elseif": [switch(token()) {
-					case TId(s): s;
-					default: null;
-				}];
-				default: [];
-			};
-			return parseExprNext(mk(EMacro(name, args), p1, tokenMax));
+			var args = [while((tk = token()).getName() == "TId")
+				tk.getParameters()[0]
+			];
+			var expr:Expr = mk(EBlock([]));
+			switch(name) {
+				case "if":
+					expr = parseExpr();
+					
+				default: unexpected(TId("#"+name));
+			}
+			return expr;
 		case TId(id):
 			var e = parseStructure(id);
 			if( e == null )
@@ -408,15 +407,20 @@ class Parser {
 					};
 				}
 				mk(EEnumDecl(ed));
-			case "class":
+			case "class", "interface":
+				var isInterface = id == "interface";
 				var name:String = switch(token()) {
 					case TId(s): s;
 					case all: unexpected(all);
 				};
+				var flags = new haxe.EnumFlags();
+				if(id == "interface")
+					flags.set(ClassFlag.IsInterface);
 				var cd:ClassDecl = {
 					pack: currentPackage,
 					name: name,
-					fields: new Map()
+					fields: new Map(),
+					flags: flags
 				};
 				ensure(TBrOpen);
 				var tk = null;
@@ -437,13 +441,13 @@ class Parser {
 							case TPOpen if(name != null):
 								switch(tk = token()) {
 									case TId("get"): field.access.set(HasGetter);
-									case TId("never"|"null"):
+									case TId("never"|"null"|"default"):
 									default: unexpected(tk);
 								};
 								ensure(TComma);
 								switch(tk = token()) {
 									case TId("set"): field.access.set(HasSetter);
-									case TId("never"|"null"):
+									case TId("never"|"null"|"default"):
 									default: unexpected(tk);
 								};
 								ensure(TPClose);

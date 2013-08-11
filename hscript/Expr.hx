@@ -47,7 +47,11 @@ typedef Field = {
 	@:optional var expr: Expr;
 	var access:haxe.EnumFlags<Access>;
 }
+enum ClassFlag {
+	IsInterface;
+}
 typedef ClassDecl = {
+	var flags:haxe.EnumFlags<ClassFlag>;
 	var name:String;
 	var pack:Array<String>;
 	var fields:Map<String, Field>;
@@ -85,7 +89,6 @@ enum ExprDef {
 	ESwitch(e : Expr,cases : Array<Case>,edef : Null<Null<Expr>>);
 	EUntyped( e:Expr);
 	EClassDecl(c:ClassDecl);
-	EMacro( n:String, args:Array<String> );
 	EUsing(e:Expr);
 	EEnumDecl(e:EnumDecl);
 }

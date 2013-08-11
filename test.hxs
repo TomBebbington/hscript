@@ -1,5 +1,10 @@
 package test;
-class Test {
-    static var NUM = 0.4;
+interface Animal {
+	public var greeting(default, null):String;
 }
-trace(test.Test.NUM);
+class Dog implements Animal {
+	public var greeting(default, null):String = "Woof";
+	public function new() {
+		
+	}
+}
